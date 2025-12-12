@@ -1,0 +1,5 @@
+{
+  "name": "CryptoFlow",
+  "description": "An educational cryptographic simulator featuring Glassmorphism UI, real-time encryption visualization, and multiple algorithm support.",
+  "requestFramePermissions": []
+}
