@@ -87,10 +87,10 @@ const App: React.FC = () => {
   const labels = LABELS[lang];
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-slate-950 text-slate-200 selection:bg-indigo-500/30">
+    <div className="min-h-screen w-full relative overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 selection:bg-indigo-500/30 transition-colors duration-300">
       {/* Background Layer */}
-      <div className="absolute inset-0 z-0 bg-grid-pattern opacity-40 pointer-events-none" />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-slate-900/0 via-slate-900/50 to-slate-950 pointer-events-none" />
+      <div className="absolute inset-0 z-0 bg-grid-pattern opacity-60 dark:opacity-40 pointer-events-none transition-opacity duration-300" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-slate-100/0 via-slate-100/80 to-slate-200 dark:from-slate-900/0 dark:via-slate-900/50 dark:to-slate-950 pointer-events-none transition-colors duration-300" />
       
       <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
 
@@ -100,15 +100,15 @@ const App: React.FC = () => {
         <aside className="hidden lg:flex flex-col w-64 gap-4 animate-in slide-in-from-left-4 fade-in duration-500 delay-100">
            {/* Algorithm Selector Card */}
            <div className="glass-panel p-4 rounded-xl flex flex-col gap-2">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Algorithm</h3>
+              <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Algorithm</h3>
               {(Object.keys(AlgorithmType) as Array<keyof typeof AlgorithmType>).map((algo) => (
                 <button
                   key={algo}
                   onClick={() => setState(s => ({ ...s, algorithm: AlgorithmType[algo] }))}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     state.algorithm === AlgorithmType[algo]
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20'
-                      : 'hover:bg-white/5 text-slate-400 hover:text-slate-200'
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/20 dark:shadow-indigo-900/40'
+                      : 'hover:bg-slate-200/50 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
                 >
                   {algo === 'CAESAR' && <RefreshCcw size={16} />}
@@ -121,11 +121,11 @@ const App: React.FC = () => {
 
            {/* Info Card */}
            <div className="glass-panel p-5 rounded-xl flex-1 flex flex-col gap-3">
-             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 mb-1">
+             <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-1">
                <Settings2 size={20} />
              </div>
-             <h3 className="font-semibold text-slate-200">{labels.algorithms[state.algorithm]}</h3>
-             <p className="text-sm text-slate-400 leading-relaxed">
+             <h3 className="font-semibold text-slate-800 dark:text-slate-200">{labels.algorithms[state.algorithm]}</h3>
+             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                {labels.descriptions[state.algorithm]}
              </p>
            </div>
@@ -139,10 +139,10 @@ const App: React.FC = () => {
             <select 
               value={state.algorithm}
               onChange={(e) => setState(s => ({...s, algorithm: e.target.value as AlgorithmType}))}
-              className="bg-transparent text-slate-200 text-sm font-medium focus:outline-none w-full"
+              className="bg-transparent text-slate-800 dark:text-slate-200 text-sm font-medium focus:outline-none w-full"
             >
               {(Object.keys(AlgorithmType) as Array<keyof typeof AlgorithmType>).map((algo) => (
-                <option key={algo} value={AlgorithmType[algo]} className="bg-slate-900 text-slate-200">
+                <option key={algo} value={AlgorithmType[algo]} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                   {labels.algorithms[AlgorithmType[algo]]}
                 </option>
               ))}
@@ -150,19 +150,19 @@ const App: React.FC = () => {
           </div>
 
           {/* Central Card: The Machine */}
-          <div className="glass-panel rounded-2xl flex flex-col overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in zoom-in-95 duration-500">
+          <div className="glass-panel rounded-2xl flex flex-col overflow-hidden shadow-xl dark:shadow-2xl ring-1 ring-black/5 dark:ring-white/10 animate-in zoom-in-95 duration-500">
             
             {/* Toolbar */}
-            <div className="h-14 border-b border-white/5 bg-white/5 flex items-center justify-between px-6">
+            <div className="h-14 border-b border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center justify-between px-6">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${state.isEncrypting ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'}`}></div>
-                <span className="text-sm font-medium text-slate-300">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                   {state.isEncrypting ? labels.encrypt : labels.decrypt} Mode
                 </span>
               </div>
               <button 
                 onClick={() => setState(s => ({ ...s, isEncrypting: !s.isEncrypting }))}
-                className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                className="p-2 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors"
                 title="Switch Mode"
               >
                 <ArrowRightLeft size={18} />
@@ -172,7 +172,7 @@ const App: React.FC = () => {
             <div className="p-6 md:p-8 flex flex-col gap-8">
               
               {/* Parameter Configuration Area */}
-              <div className="flex flex-wrap gap-6 items-end p-4 rounded-xl bg-slate-900/50 border border-white/5">
+              <div className="flex flex-wrap gap-6 items-end p-4 rounded-xl bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5">
                 {state.algorithm === AlgorithmType.CAESAR && (
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{labels.shift}</label>
@@ -183,9 +183,9 @@ const App: React.FC = () => {
                         max="25" 
                         value={state.shift}
                         onChange={(e) => setState(s => ({ ...s, shift: parseInt(e.target.value) }))}
-                        className="w-40 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        className="w-40 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                       />
-                      <span className="w-10 text-center font-mono text-indigo-400 font-bold text-lg">{state.shift}</span>
+                      <span className="w-10 text-center font-mono text-indigo-600 dark:text-indigo-400 font-bold text-lg">{state.shift}</span>
                     </div>
                   </div>
                 )}
@@ -194,13 +194,13 @@ const App: React.FC = () => {
                   <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{labels.key}</label>
                     <div className="relative group">
-                      <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors" />
                       <input 
                         type="text" 
                         value={state.key}
                         onChange={(e) => setState(s => ({ ...s, key: e.target.value }))}
                         placeholder={state.algorithm === AlgorithmType.AES ? "Enter passphrase..." : "KEYWORD"}
-                        className="w-full bg-slate-950/50 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-2.5 transition-all outline-none"
+                        className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 block pl-10 p-2.5 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                       />
                     </div>
                   </div>
@@ -210,7 +210,7 @@ const App: React.FC = () => {
               {/* Input / Output Grid */}
               <div className="grid md:grid-cols-2 gap-6 relative">
                  {/* Decorative Arrow */}
-                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex w-8 h-8 bg-slate-800 border border-slate-600 rounded-full items-center justify-center text-slate-400">
+                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex w-8 h-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full items-center justify-center text-slate-400 shadow-sm">
                     <ArrowRightLeft size={14} className={state.isEncrypting ? "" : "rotate-180"} />
                  </div>
 
@@ -220,7 +220,7 @@ const App: React.FC = () => {
                       <label className="text-xs font-bold text-slate-500 uppercase">
                         {state.isEncrypting ? 'Plaintext' : 'Ciphertext'}
                       </label>
-                      <button onClick={() => setState(s => ({...s, input: ''}))} className="text-slate-500 hover:text-red-400 transition-colors">
+                      <button onClick={() => setState(s => ({...s, input: ''}))} className="text-slate-400 hover:text-red-500 transition-colors">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -228,7 +228,7 @@ const App: React.FC = () => {
                       value={state.input}
                       onChange={(e) => setState(s => ({ ...s, input: e.target.value }))}
                       placeholder={labels.inputPlaceholder}
-                      className="w-full h-64 bg-slate-950/30 border border-white/10 rounded-xl p-4 text-slate-300 placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all outline-none resize-none font-mono text-sm leading-relaxed"
+                      className="w-full h-64 bg-white/50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/10 rounded-xl p-4 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all outline-none resize-none font-mono text-sm leading-relaxed"
                     />
                  </div>
 
@@ -238,7 +238,7 @@ const App: React.FC = () => {
                       <label className="text-xs font-bold text-slate-500 uppercase">
                         {state.isEncrypting ? 'Ciphertext' : 'Plaintext'}
                       </label>
-                      <button onClick={() => copyToClipboard(state.output)} className="text-slate-500 hover:text-emerald-400 transition-colors">
+                      <button onClick={() => copyToClipboard(state.output)} className="text-slate-400 hover:text-emerald-500 transition-colors">
                         <Copy size={14} />
                       </button>
                     </div>
@@ -247,11 +247,11 @@ const App: React.FC = () => {
                         readOnly
                         value={state.output}
                         placeholder={labels.outputPlaceholder}
-                        className="w-full h-full bg-slate-900/50 border border-white/5 rounded-xl p-4 text-indigo-200 placeholder:text-slate-700 focus:border-indigo-500/30 transition-all outline-none resize-none font-mono text-sm leading-relaxed cursor-text"
+                        className="w-full h-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-xl p-4 text-indigo-600 dark:text-indigo-200 placeholder:text-slate-400 dark:placeholder:text-slate-700 focus:border-indigo-500/30 transition-all outline-none resize-none font-mono text-sm leading-relaxed cursor-text"
                       />
                       {/* Visual Lock Icon Overlay if empty */}
                       {!state.output && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-slate-400 dark:text-slate-200">
                            {state.isEncrypting ? <Lock size={48} /> : <Unlock size={48} />}
                         </div>
                       )}
