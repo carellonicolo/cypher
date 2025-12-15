@@ -1,5 +1,5 @@
 import React from 'react';
-import { Github, Moon, Sun, Globe, ShieldCheck } from 'lucide-react';
+import { Github, Moon, Sun, Globe, ShieldCheck, Cpu } from 'lucide-react';
 import { Language, Theme, LABELS } from '../types';
 
 interface HeaderProps {
@@ -21,14 +21,42 @@ const Header: React.FC<HeaderProps> = ({ lang, setLang, theme, setTheme }) => {
       
       {/* Left: Branding */}
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <ShieldCheck className="text-white w-6 h-6" />
+        {/* Dynamic Logo Container */}
+        <div className="relative flex items-center justify-center w-11 h-11 group cursor-default">
+            {/* Glowing Blur Behind */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-md opacity-40 group-hover:opacity-60 transition-opacity duration-500"></div>
+            
+            {/* Main Logo Box */}
+            <div className="relative w-full h-full bg-white dark:bg-slate-900 rounded-xl border border-indigo-100 dark:border-white/10 flex items-center justify-center overflow-hidden shadow-sm">
+                
+                {/* Rotating Ring Effect */}
+                <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,transparent_0_300deg,rgba(99,102,241,0.5)_360deg)] animate-spin-slow opacity-0 dark:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Inner Mask for Ring */}
+                <div className="absolute inset-[2px] bg-white dark:bg-slate-900 rounded-[10px] z-0"></div>
+
+                {/* Grid Pattern Background */}
+                <div className="absolute inset-0 bg-grid-pattern opacity-10 z-0"></div>
+
+                {/* Icon Layer */}
+                <div className="relative z-10 text-indigo-600 dark:text-indigo-400">
+                    <ShieldCheck strokeWidth={2.5} size={22} className="drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                </div>
+            </div>
         </div>
+
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-            {LABELS[lang].title} <span className="text-[10px] ml-1 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/20 dark:border-indigo-500/30">BETA</span>
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+          <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+                {LABELS[lang].title}
+              </h1>
+              {/* Animated Beta Badge */}
+              <span className="relative flex h-5 w-auto items-center justify-center overflow-hidden rounded bg-indigo-500/10 px-2 py-0.5 border border-indigo-500/20">
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></span>
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-300 animate-pulse tracking-wide">BETA</span>
+              </span>
+          </div>
+          <p className="text-xs font-medium bg-gradient-to-r from-slate-500 to-slate-400 dark:from-slate-400 dark:to-slate-500 bg-clip-text text-transparent mt-1">
             {LABELS[lang].subtitle}
           </p>
         </div>
