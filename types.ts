@@ -137,6 +137,20 @@ export const LABELS = {
     transfer: 'Usa per Decifrare',
     console: 'Console di Sistema',
     consolePlaceholder: 'In attesa di operazioni...',
+    tooltips: {
+        catClassical: 'Algoritmi storici basati su sostituzione',
+        catSymmetric: 'Chiave singola per cifrare e decifrare',
+        catAsymmetric: 'Coppia di chiavi (Pubblica/Privata)',
+        catHashing: 'Impronte digitali irreversibili',
+        clearInput: 'Cancella tutto il testo',
+        copyOutput: 'Copia negli appunti',
+        transfer: 'Sposta l\'output nel modulo di decifratura',
+        randomize: 'Genera valore casuale',
+        newParams: 'Genera nuovi parametri di gruppo',
+        sendKey: 'Invia chiave pubblica',
+        getKey: 'Ricevi chiave pubblica',
+        openGuide: 'Apri documentazione'
+    },
     categories: {
       CLASSICAL: 'Classici',
       SYMMETRIC: 'Simmetrici',
@@ -245,7 +259,7 @@ export const LABELS = {
             guide: "1. GENERAZIONE: All'avvio, il simulatore crea una coppia di chiavi reale a 2048 bit.\n2. RUOLI: Immagina di essere Alice.\n3. CIFRATURA: Alice usa la CHIAVE PUBBLICA del destinatario (Bob). Copia la chiave pubblica e usala nel modulo di cifratura.\n4. DECIFRATURA: Bob usa la sua CHIAVE PRIVATA (interna e nascosta) per leggere il messaggio.\n5. NOTA: Non puoi decifrare un messaggio usando la chiave pubblica che lo ha creato!"
         },
         DIFFIE_HELLMAN: {
-            theory: "CONCETTO:\nDescritto nel 1976, non è un algoritmo di cifratura (non nasconde messaggi), ma un protocollo di KEY EXCHANGE (scambio chiavi). Permette a due parti di concordare un numero segreto comunicando su un canale pubblico insicuro, senza che chi ascolta possa capire quale sia quel numero.\n\nMATEMATICA:\nSi basa sul problema del logaritmo discreto.\n1. Alice e Bob concordano pubblicamente un primo 'p' e un generatore 'g'.\n2. Alice sceglie un segreto 'a', calcola A = g^a mod p e lo invia.\n3. Bob sceglie un segreto 'b', calcola B = g^b mod p e lo invia.\n4. Alice calcola S = B^a mod p.\n5. Bob calcola S = A^b mod p.\nMatematicamente, entrambi ottengono g^(ab) mod p, che è il segreto condiviso.\n\nANALOGIA (Colori):\nAlice e Bob mescolano il loro colore segreto con un colore comune pubblico. Si scambiano i mix. Poi aggiungono il proprio colore segreto al mix ricevuto. Il risultato finale è un colore identico per entrambi, che nessuno esterno può replicare.",
+            theory: "CONCETTO:\nDescritto nel 1976, non è un algoritmo di cifratura, ma un protocollo di SCAMBIO CHIAVI.\n\nFORMULA DEL SEGRETO CONDIVISO:\nAlice calcola: S = B^a mod p\nBob calcola: S = A^b mod p\nDove:\n- 'S' è il Segreto Condiviso\n- 'a'/'b' sono le Chiavi Private\n- 'A'/'B' sono le Chiavi Pubbliche\n- 'p' è il Modulo Primo\n\nESPONENZIAZIONE MODULARE:\nLa sicurezza si basa sul calcolo di (base^esponente) % modulo. È un'operazione facile in una direzione, ma computazionalmente intrattabile da invertire (trovare l'esponente) su grandi numeri (Problema del Logaritmo Discreto).\n\nANALOGIA (Colori):\nAlice e Bob mescolano il loro colore segreto con un colore comune pubblico. Si scambiano i mix. Poi aggiungono il proprio colore segreto al mix ricevuto. Il risultato finale è un colore identico per entrambi, impossibile da replicare per chi osserva solo i mix pubblici.",
             guide: "1. PARAMETRI: Alice genera 'p' e 'g'.\n2. CHIAVI PRIVATE: Alice e Bob generano le loro chiavi private (numeri casuali).\n3. SCAMBIO: Alice invia la sua Chiave Pubblica (A) a Bob. Bob invia la sua (B) ad Alice. (Usa i pulsanti 'Send to...' per vedere l'animazione).\n4. CALCOLO: Il simulatore calcola automaticamente il 'Shared Secret'. Verifica che il segreto sia IDENTICO per entrambi.\n5. GRUPPI: Prova il gruppo 'Toy' per vedere numeri piccoli comprensibili, o 'MODP' per vedere la crittografia reale a 2048 bit."
         },
         MD5: {
@@ -288,6 +302,20 @@ export const LABELS = {
     transfer: 'Use to Decrypt',
     console: 'System Console',
     consolePlaceholder: 'Waiting for operations...',
+    tooltips: {
+        catClassical: 'Historical substitution-based algorithms',
+        catSymmetric: 'Single key for encryption and decryption',
+        catAsymmetric: 'Key pair (Public/Private)',
+        catHashing: 'Irreversible digital fingerprints',
+        clearInput: 'Clear all text',
+        copyOutput: 'Copy to clipboard',
+        transfer: 'Move output to decryption module',
+        randomize: 'Generate random value',
+        newParams: 'Generate new group parameters',
+        sendKey: 'Send Public Key',
+        getKey: 'Receive Public Key',
+        openGuide: 'Open Documentation'
+    },
     categories: {
       CLASSICAL: 'Classical',
       SYMMETRIC: 'Symmetric',
@@ -396,7 +424,7 @@ export const LABELS = {
             guide: "1. KEYS: Generated on load.\n2. ENCRYPT: Use the Recipient's Public Key.\n3. DECRYPT: Use your own Private Key."
         },
         DIFFIE_HELLMAN: {
-            theory: "CONCEPT:\nA method to exchange a secret key over a public channel. It is NOT for encrypting messages directly.\n\nMATH:\nBased on discrete logarithms. Alice and Bob combine their private numbers with public parameters to arrive at the same result, without revealing their private numbers.\n\nANALOGY:\nLike mixing paint colors. You can send the mix, but an attacker can't 'un-mix' it to find the original secret color.",
+            theory: "CONCEPT:\nA method to exchange a secret key over a public channel. It is NOT for encrypting messages directly.\n\nSHARED SECRET FORMULA:\nAlice calculates: S = B^a mod p\nBob calculates: S = A^b mod p\nWhere:\n- 'S' is the Shared Secret\n- 'a'/'b' are Private Keys\n- 'A'/'B' are Public Keys\n- 'p' is the Prime Modulus\n\nMODULAR EXPONENTIATION:\nThe security relies on calculating (base^exponent) % modulus. This operation is easy to perform forward but computationally infeasible to reverse (finding the exponent) for large numbers. This is known as the Discrete Logarithm Problem.\n\nANALOGY:\nLike mixing paint colors. You can send the mix, but an attacker can't 'un-mix' it to find the original secret color.",
             guide: "1. SETUP: Generate parameters.\n2. EXCHANGE: Send public keys back and forth.\n3. RESULT: Check the 'Shared Secret'. It must be identical."
         },
         MD5: {
@@ -422,3 +450,4 @@ export const LABELS = {
     }
   }
 };
+    
