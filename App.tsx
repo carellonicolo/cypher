@@ -3,17 +3,18 @@ import Header from './components/Header';
 import Console from './components/Console';
 import { 
   AlgorithmType, Language, Theme, LABELS, LogEntry, SectionState, 
-  VigenereMode, AesMode, AlgorithmCategory, ALGO_CATEGORIES, Sha3Length 
+  VigenereMode, AesMode, AlgorithmCategory, ALGO_CATEGORIES, Sha3Length, LegacyKeyMode, DhGroup 
 } from './types';
 import { 
   caesarCipher, vigenereCipher, aesEncrypt, aesDecrypt, 
   playfairCipher, substitutionCipher, computeHash,
   legacySimulationEncrypt, legacySimulationDecrypt,
-  generateRSAKeys, rsaEncrypt, rsaDecrypt
+  generateRSAKeys, rsaEncrypt, rsaDecrypt,
+  dhGenerateParams, dhGeneratePrivateKey, dhCalculate
 } from './utils/cryptoEngine';
 import { 
-  Lock, Unlock, Copy, Trash2, Settings2, ArrowRight,
-  ShieldCheck, Hash, Key, BookOpen
+  Lock, Unlock, Copy, Trash2, Settings2, ArrowRight, ArrowLeft,
+  ShieldCheck, Hash, Key, BookOpen, RefreshCw, Zap
 } from 'lucide-react';
 
 // Reusable Segmented Control
@@ -56,16 +57,18 @@ const App: React.FC = () => {
   
   // Independent States
   const [encState, setEncState] = useState<SectionState>({
-    input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512
+    input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512, legacyKeyMode: LegacyKeyMode.DES56,
+    dhGroup: DhGroup.TOY, dhP: '', dhG: '', dhOtherPub: ''
   });
   
   const [decState, setDecState] = useState<SectionState>({
-    input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512
+    input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512, legacyKeyMode: LegacyKeyMode.DES56,
+    dhGroup: DhGroup.TOY, dhP: '', dhG: '', dhOtherPub: ''
   });
 
   const category = ALGO_CATEGORIES[algorithm];
   const isHashing = category === AlgorithmCategory.HASHING;
-  const isAsymmetric = category === AlgorithmCategory.ASYMMETRIC;
+  const isDiffieHellman = algorithm === AlgorithmType.DIFFIE_HELLMAN;
 
   const labels = LABELS[lang];
 
@@ -92,16 +95,43 @@ const App: React.FC = () => {
     }
   }, [algorithm]);
 
-  // --- Encryption Effect ---
+  // --- Diffie-Hellman Initial Params Effect ---
+  useEffect(() => {
+    if (algorithm === AlgorithmType.DIFFIE_HELLMAN && !encState.dhP) {
+      const params = dhGenerateParams(encState.dhGroup);
+      const privKeyA = dhGeneratePrivateKey(params.p, encState.dhGroup);
+      const privKeyB = dhGeneratePrivateKey(params.p, encState.dhGroup);
+      
+      setEncState(s => ({ ...s, dhP: params.p, dhG: params.g, key: privKeyA }));
+      setDecState(s => ({ ...s, dhP: params.p, dhG: params.g, key: privKeyB }));
+      
+      addLog(`Diffie-Hellman Parameters Generated (${encState.dhGroup})`, 'info');
+    }
+  }, [algorithm]); // Only run once on mount/algo change, handle group change separately
+
+  // Handle DH Group Change
+  const changeDhGroup = (group: DhGroup) => {
+      const params = dhGenerateParams(group);
+      const privKeyA = dhGeneratePrivateKey(params.p, group);
+      const privKeyB = dhGeneratePrivateKey(params.p, group);
+      
+      setEncState(s => ({ ...s, dhGroup: group, dhP: params.p, dhG: params.g, key: privKeyA, output: '', dhOtherPub: '' }));
+      setDecState(s => ({ ...s, dhGroup: group, dhP: params.p, dhG: params.g, key: privKeyB, output: '', dhOtherPub: '' }));
+      
+      addLog(`Switched to DH Group: ${group}`, 'info');
+  };
+
+  // --- Encryption/Alice/Process Effect ---
   useEffect(() => {
     const runEncrypt = async () => {
-      if (!encState.input) {
+      // For DH, we don't need 'input' in the traditional sense, so we skip that check
+      if (!isDiffieHellman && !encState.input) {
         setEncState(s => ({ ...s, output: '' }));
         return;
       }
       
       let result = '';
-      addLog(`Processing ${algorithm}...`, 'process');
+      if(!isDiffieHellman) addLog(`Processing ${algorithm}...`, 'process');
 
       try {
         switch(algorithm) {
@@ -122,13 +152,22 @@ const App: React.FC = () => {
             break;
           case AlgorithmType.DES:
           case AlgorithmType.TRIPLE_DES:
-            result = legacySimulationEncrypt(encState.input, algorithm === AlgorithmType.DES ? 'DES' : '3DES');
+            result = legacySimulationEncrypt(encState.input, algorithm === AlgorithmType.DES ? 'DES' : '3DES', encState.legacyKeyMode);
             break;
           case AlgorithmType.RSA:
             if (encState.rsaKeyPair) {
               result = await rsaEncrypt(encState.input, encState.rsaKeyPair.publicKey);
             } else {
               result = "Generating Keys...";
+            }
+            break;
+          case AlgorithmType.DIFFIE_HELLMAN:
+            if(encState.dhP && encState.dhG && encState.key) {
+               const dhRes = dhCalculate(encState.dhP, encState.dhG, encState.key, encState.dhOtherPub);
+               result = dhRes.pub; // Just Public Key for now
+               if (dhRes.shared) {
+                 result += `\n\n--- SHARED SECRET ESTABLISHED ---\nSecret: ${dhRes.shared}`;
+               }
             }
             break;
           case AlgorithmType.MD5:
@@ -144,27 +183,28 @@ const App: React.FC = () => {
         
         setEncState(s => ({ ...s, output: result }));
         if (result.startsWith('Error:')) addLog(result, 'error');
-        else addLog(`${isHashing ? 'Hashing' : 'Encryption'} successful.`, 'success');
+        else if (!isDiffieHellman) addLog(`${isHashing ? 'Hashing' : 'Encryption'} successful.`, 'success');
       } catch (err) {
         addLog(`Error: ${err}`, 'error');
       }
     };
     const timeout = setTimeout(runEncrypt, 500);
     return () => clearTimeout(timeout);
-  }, [encState.input, encState.key, encState.shift, encState.vigenereMode, encState.aesMode, encState.sha3Length, algorithm, encState.rsaKeyPair]);
+  }, [encState.input, encState.key, encState.shift, encState.vigenereMode, encState.aesMode, encState.sha3Length, encState.legacyKeyMode, encState.dhP, encState.dhG, encState.dhOtherPub, algorithm, encState.rsaKeyPair]);
 
-  // --- Decryption Effect ---
+  // --- Decryption/Bob Effect ---
   useEffect(() => {
-    if (isHashing) return; // Skip for hashing
+    if (isHashing) return; 
 
     const runDecrypt = async () => {
-      if (!decState.input) {
+      // For DH, skip input check
+      if (!isDiffieHellman && !decState.input) {
         setDecState(s => ({ ...s, output: '' }));
         return;
       }
       
       let result = '';
-      addLog(`Decrypting with ${algorithm}...`, 'process');
+      if(!isDiffieHellman) addLog(`Decrypting with ${algorithm}...`, 'process');
 
       try {
         switch(algorithm) {
@@ -185,25 +225,34 @@ const App: React.FC = () => {
             break;
           case AlgorithmType.DES:
           case AlgorithmType.TRIPLE_DES:
-            result = legacySimulationDecrypt(decState.input, algorithm === AlgorithmType.DES ? 'DES' : '3DES');
+            result = legacySimulationDecrypt(decState.input, algorithm === AlgorithmType.DES ? 'DES' : '3DES', decState.legacyKeyMode);
             break;
           case AlgorithmType.RSA:
             if (decState.rsaKeyPair) {
               result = await rsaDecrypt(decState.input, decState.rsaKeyPair.privateKey);
             }
             break;
+          case AlgorithmType.DIFFIE_HELLMAN:
+            if(decState.dhP && decState.dhG && decState.key) {
+               const dhRes = dhCalculate(decState.dhP, decState.dhG, decState.key, decState.dhOtherPub);
+               result = dhRes.pub;
+               if (dhRes.shared) {
+                 result += `\n\n--- SHARED SECRET ESTABLISHED ---\nSecret: ${dhRes.shared}`;
+               }
+            }
+            break;
         }
         
         setDecState(s => ({ ...s, output: result }));
         if (result.startsWith('Error:')) addLog(result, 'error');
-        else addLog(`Decryption successful.`, 'success');
+        else if (!isDiffieHellman) addLog(`Decryption successful.`, 'success');
       } catch (err) {
         addLog(`Decryption Error: ${err}`, 'error');
       }
     };
     const timeout = setTimeout(runDecrypt, 500);
     return () => clearTimeout(timeout);
-  }, [decState.input, decState.key, decState.shift, decState.vigenereMode, decState.aesMode, algorithm, decState.rsaKeyPair]);
+  }, [decState.input, decState.key, decState.shift, decState.vigenereMode, decState.aesMode, decState.legacyKeyMode, decState.dhP, decState.dhG, decState.dhOtherPub, algorithm, decState.rsaKeyPair]);
 
 
   const copyToClipboard = (text: string) => {
@@ -218,10 +267,33 @@ const App: React.FC = () => {
       key: encState.key,
       shift: encState.shift,
       aesMode: encState.aesMode,
-      vigenereMode: encState.vigenereMode
+      vigenereMode: encState.vigenereMode,
+      legacyKeyMode: encState.legacyKeyMode
     }));
     addLog('Transferred ciphertext to decryption module', 'info');
   };
+
+  // Helper for DH Param Sync
+  const syncDhParams = () => {
+    setDecState(s => ({ ...s, dhGroup: encState.dhGroup, dhP: encState.dhP, dhG: encState.dhG }));
+    addLog('Parameters synced from Alice to Bob', 'info');
+  };
+
+  const generateNewDhParams = () => {
+    // If using TOY group, actually regenerate randoms. If fixed groups, just reload default (no change visible except key reset)
+    const params = dhGenerateParams(encState.dhGroup);
+    setEncState(s => ({ ...s, dhP: params.p, dhG: params.g }));
+    addLog('DH Parameters Reset', 'success');
+  };
+  
+  const generateNewDhKey = (party: 'alice' | 'bob') => {
+    if (party === 'alice') {
+        setEncState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup) }));
+    } else {
+        setDecState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup) }));
+    }
+    addLog(`New Private Key generated for ${party}`, 'info');
+  }
 
   const getCategoryIcon = (cat: AlgorithmCategory) => {
     switch(cat) {
@@ -244,7 +316,6 @@ const App: React.FC = () => {
         
         {/* Sidebar: Global Settings */}
         <aside className="lg:w-64 flex flex-col gap-4 animate-in slide-in-from-left-4 fade-in duration-500 delay-100 h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar pb-10">
-           
            {/* Algorithm Selector Grouped */}
            <div className="glass-panel p-3 rounded-xl flex flex-col gap-4">
               {Object.keys(labels.categories).map((catKey) => {
@@ -261,7 +332,16 @@ const App: React.FC = () => {
                       {algos.map((algo) => (
                         <button
                           key={algo}
-                          onClick={() => setAlgorithm(algo as AlgorithmType)}
+                          onClick={() => {
+                             setAlgorithm(algo as AlgorithmType);
+                             if (algo === AlgorithmType.DES) {
+                               setEncState(s => ({...s, legacyKeyMode: LegacyKeyMode.DES56}));
+                               setDecState(s => ({...s, legacyKeyMode: LegacyKeyMode.DES56}));
+                             } else if (algo === AlgorithmType.TRIPLE_DES) {
+                               setEncState(s => ({...s, legacyKeyMode: LegacyKeyMode.TDES168}));
+                               setDecState(s => ({...s, legacyKeyMode: LegacyKeyMode.TDES168}));
+                             }
+                          }}
                           className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 truncate ${
                             algorithm === algo
                               ? 'bg-indigo-600 text-white shadow-md'
@@ -292,13 +372,13 @@ const App: React.FC = () => {
         {/* Main Grid */}
         <div className={`flex-1 grid grid-cols-1 ${isHashing ? 'xl:grid-cols-1' : 'xl:grid-cols-2'} gap-6 w-full`}>
           
-          {/* ================= ENCRYPTION PANEL ================= */}
+          {/* ================= ENCRYPTION / ALICE PANEL ================= */}
           <div className={`glass-panel rounded-2xl flex flex-col overflow-hidden shadow-xl dark:shadow-2xl ring-1 ring-indigo-500/20 animate-in zoom-in-95 duration-500 h-fit ${isHashing ? 'max-w-3xl mx-auto w-full' : ''}`}>
             <div className="h-14 border-b border-slate-200/50 dark:border-white/5 bg-indigo-50/50 dark:bg-indigo-950/20 flex items-center justify-between px-6">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
                 <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
-                  {isHashing ? 'Input & Hash' : labels.encrypt}
+                  {isHashing ? 'Input & Hash' : isDiffieHellman ? 'Party A (Alice)' : labels.encrypt}
                 </span>
               </div>
               <Lock size={16} className="text-indigo-400" />
@@ -308,6 +388,44 @@ const App: React.FC = () => {
                {/* Controls */}
                <div className="p-4 rounded-lg bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5 space-y-4">
                 
+                {/* DH CONTROLS */}
+                {isDiffieHellman && (
+                    <div className="space-y-4">
+                       <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Parameters Group</label>
+                          <SegmentedControl 
+                            options={Object.keys(DhGroup)} 
+                            value={encState.dhGroup} 
+                            onChange={(v) => changeDhGroup(v as DhGroup)} 
+                            labelMap={labels.modes.dh} 
+                            color="indigo" 
+                          />
+                       </div>
+
+                       <div className="flex items-end gap-3">
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">Prime (p)</label>
+                            <input type="text" readOnly={encState.dhGroup !== DhGroup.TOY} value={encState.dhP} onChange={(e) => setEncState(s => ({...s, dhP: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-indigo-600 dark:text-indigo-400 truncate focus:truncate-none" title={encState.dhP}/>
+                          </div>
+                          <div className="w-20 space-y-1">
+                             <label className="text-[10px] font-bold text-slate-500 uppercase">Gen (g)</label>
+                             <input type="text" readOnly={encState.dhGroup !== DhGroup.TOY} value={encState.dhG} onChange={(e) => setEncState(s => ({...s, dhG: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-indigo-600 dark:text-indigo-400"/>
+                          </div>
+                          {encState.dhGroup === DhGroup.TOY && (
+                              <button onClick={generateNewDhParams} className="h-[34px] px-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md transition-colors" title="Generate New Params"><RefreshCw size={14}/></button>
+                          )}
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">Private Key (a)</label>
+                            <button onClick={() => generateNewDhKey('alice')} className="text-[10px] text-indigo-500 hover:underline flex items-center gap-1"><Zap size={10}/> Randomize</button>
+                          </div>
+                          <input type="text" value={encState.key} onChange={(e) => setEncState(s => ({...s, key: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono truncate focus:truncate-none"/>
+                       </div>
+                    </div>
+                )}
+
                 {/* CAESAR */}
                 {algorithm === AlgorithmType.CAESAR && (
                     <div className="flex items-center justify-between gap-4">
@@ -340,6 +458,18 @@ const App: React.FC = () => {
                          </div>
                        </div>
                      )}
+                     {algorithm === AlgorithmType.DES && (
+                       <div className="flex flex-col gap-1">
+                          <label className="text-xs font-semibold text-slate-500 uppercase">Key Length</label>
+                          <SegmentedControl options={[LegacyKeyMode.DES56]} value={encState.legacyKeyMode} onChange={(v) => setEncState(s => ({...s, legacyKeyMode: v as LegacyKeyMode}))} labelMap={labels.modes.legacy} color="indigo" />
+                       </div>
+                     )}
+                     {algorithm === AlgorithmType.TRIPLE_DES && (
+                       <div className="flex flex-col gap-1">
+                          <label className="text-xs font-semibold text-slate-500 uppercase">Key Length</label>
+                          <SegmentedControl options={[LegacyKeyMode.TDES112, LegacyKeyMode.TDES168]} value={encState.legacyKeyMode} onChange={(v) => setEncState(s => ({...s, legacyKeyMode: v as LegacyKeyMode}))} labelMap={labels.modes.legacy} color="indigo" />
+                       </div>
+                     )}
                   </div>
                 )}
                 
@@ -360,21 +490,23 @@ const App: React.FC = () => {
                 )}
                </div>
 
-               {/* Input */}
-               <div>
-                  <div className="flex justify-between px-1 mb-1">
-                    <label className="text-xs font-bold text-slate-500">{labels.cipherInput}</label>
-                    <button onClick={() => setEncState(s => ({...s, input: ''}))}><Trash2 size={12} className="text-slate-400 hover:text-red-500"/></button>
-                  </div>
-                  <textarea value={encState.input} onChange={(e) => setEncState(s => ({ ...s, input: e.target.value }))} placeholder={labels.inputPlaceholder} className="w-full h-32 bg-white/50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm font-mono focus:ring-1 focus:ring-indigo-500/50 outline-none resize-none"/>
-               </div>
+               {/* Input - Hidden for DH */}
+               {!isDiffieHellman && (
+                 <div>
+                    <div className="flex justify-between px-1 mb-1">
+                      <label className="text-xs font-bold text-slate-500">{labels.cipherInput}</label>
+                      <button onClick={() => setEncState(s => ({...s, input: ''}))}><Trash2 size={12} className="text-slate-400 hover:text-red-500"/></button>
+                    </div>
+                    <textarea value={encState.input} onChange={(e) => setEncState(s => ({ ...s, input: e.target.value }))} placeholder={labels.inputPlaceholder} className="w-full h-32 bg-white/50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm font-mono focus:ring-1 focus:ring-indigo-500/50 outline-none resize-none"/>
+                 </div>
+               )}
                
-               {/* Output */}
+               {/* Output (Public Key for DH) */}
                <div>
                   <div className="flex justify-between px-1 mb-1">
-                    <label className="text-xs font-bold text-slate-500">{labels.cipherOutput}</label>
+                    <label className="text-xs font-bold text-slate-500">{isDiffieHellman ? 'Public Key (A) & Secret' : labels.cipherOutput}</label>
                     <div className="flex gap-2">
-                       {encState.output && !isHashing && <button onClick={transferToDecrypt} className="flex items-center gap-1 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded transition-colors uppercase font-bold tracking-wider" title={labels.transfer}>{labels.transfer} <ArrowRight size={10}/></button>}
+                       {encState.output && !isHashing && !isDiffieHellman && <button onClick={transferToDecrypt} className="flex items-center gap-1 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded transition-colors uppercase font-bold tracking-wider" title={labels.transfer}>{labels.transfer} <ArrowRight size={10}/></button>}
                        <button onClick={() => copyToClipboard(encState.output)}><Copy size={12} className="text-slate-400 hover:text-emerald-500"/></button>
                     </div>
                   </div>
@@ -383,18 +515,29 @@ const App: React.FC = () => {
                     {!encState.output && <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"><Lock size={32}/></div>}
                   </div>
                </div>
+
+               {/* DH Exchange Slot */}
+               {isDiffieHellman && (
+                 <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                    <label className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1 block">Receive Bob's Public Key (B)</label>
+                    <div className="flex gap-2">
+                       <input type="number" placeholder="Enter B" value={encState.dhOtherPub} onChange={(e) => setEncState(s => ({...s, dhOtherPub: e.target.value}))} className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono"/>
+                       <button onClick={() => setEncState(s => ({...s, dhOtherPub: decState.output.split('\n')[0]}))} className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors" title="Get from Bob"><ArrowLeft size={16}/></button>
+                    </div>
+                 </div>
+               )}
             </div>
           </div>
 
 
-          {/* ================= DECRYPTION PANEL ================= */}
+          {/* ================= DECRYPTION / BOB PANEL ================= */}
           {!isHashing && (
             <div className="glass-panel rounded-2xl flex flex-col overflow-hidden shadow-xl dark:shadow-2xl ring-1 ring-rose-500/20 animate-in zoom-in-95 duration-500 delay-75 h-fit">
             <div className="h-14 border-b border-slate-200/50 dark:border-white/5 bg-rose-50/50 dark:bg-rose-950/20 flex items-center justify-between px-6">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
                 <span className="text-sm font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wide">
-                  {labels.decrypt}
+                  {isDiffieHellman ? 'Party B (Bob)' : labels.decrypt}
                 </span>
               </div>
               <Unlock size={16} className="text-rose-400" />
@@ -403,6 +546,43 @@ const App: React.FC = () => {
             <div className="p-5 flex flex-col gap-5">
                {/* Controls */}
                <div className="p-4 rounded-lg bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-white/5 space-y-4">
+                
+                {/* DH CONTROLS */}
+                {isDiffieHellman && (
+                    <div className="space-y-4">
+                       <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Parameters Group (View Only)</label>
+                          <SegmentedControl 
+                            options={Object.keys(DhGroup)} 
+                            value={decState.dhGroup} 
+                            onChange={(v) => {/* Bob follows Alice's group in this simulation */}} 
+                            labelMap={labels.modes.dh} 
+                            color="rose" 
+                          />
+                       </div>
+
+                       <div className="flex items-end gap-3">
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">Prime (p)</label>
+                            <input type="text" readOnly value={decState.dhP} onChange={(e) => setDecState(s => ({...s, dhP: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400 truncate focus:truncate-none" title={decState.dhP}/>
+                          </div>
+                          <div className="w-20 space-y-1">
+                             <label className="text-[10px] font-bold text-slate-500 uppercase">Gen (g)</label>
+                             <input type="text" readOnly value={decState.dhG} onChange={(e) => setDecState(s => ({...s, dhG: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400"/>
+                          </div>
+                          <button onClick={syncDhParams} className="h-[34px] px-3 bg-rose-500 hover:bg-rose-600 text-white rounded-md transition-colors" title="Copy Params from Alice"><ArrowLeft size={14}/></button>
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <div className="flex justify-between">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">Private Key (b)</label>
+                            <button onClick={() => generateNewDhKey('bob')} className="text-[10px] text-rose-500 hover:underline flex items-center gap-1"><Zap size={10}/> Randomize</button>
+                          </div>
+                          <input type="text" value={decState.key} onChange={(e) => setDecState(s => ({...s, key: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono truncate focus:truncate-none"/>
+                       </div>
+                    </div>
+                )}
+                
                 {algorithm === AlgorithmType.CAESAR && (
                     <div className="flex items-center justify-between gap-4">
                       <label className="text-xs font-semibold text-slate-500 uppercase">{labels.shift}</label>
@@ -433,6 +613,18 @@ const App: React.FC = () => {
                            </div>
                          </div>
                        )}
+                       {algorithm === AlgorithmType.DES && (
+                         <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-slate-500 uppercase">Key Length</label>
+                            <SegmentedControl options={[LegacyKeyMode.DES56]} value={decState.legacyKeyMode} onChange={(v) => setDecState(s => ({...s, legacyKeyMode: v as LegacyKeyMode}))} labelMap={labels.modes.legacy} color="rose" />
+                         </div>
+                       )}
+                       {algorithm === AlgorithmType.TRIPLE_DES && (
+                         <div className="flex flex-col gap-1">
+                            <label className="text-xs font-semibold text-slate-500 uppercase">Key Length</label>
+                            <SegmentedControl options={[LegacyKeyMode.TDES112, LegacyKeyMode.TDES168]} value={decState.legacyKeyMode} onChange={(v) => setDecState(s => ({...s, legacyKeyMode: v as LegacyKeyMode}))} labelMap={labels.modes.legacy} color="rose" />
+                         </div>
+                       )}
                     </div>
                 )}
 
@@ -447,19 +639,21 @@ const App: React.FC = () => {
                 )}
                </div>
 
-               {/* Input */}
-               <div>
-                  <div className="flex justify-between px-1 mb-1">
-                    <label className="text-xs font-bold text-slate-500">{labels.decipherInput}</label>
-                    <button onClick={() => setDecState(s => ({...s, input: ''}))}><Trash2 size={12} className="text-slate-400 hover:text-red-500"/></button>
-                  </div>
-                  <textarea value={decState.input} onChange={(e) => setDecState(s => ({ ...s, input: e.target.value }))} placeholder={labels.inputPlaceholder} className="w-full h-32 bg-white/50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm font-mono focus:ring-1 focus:ring-rose-500/50 outline-none resize-none"/>
-               </div>
-               
+               {/* Input - Hidden for DH */}
+               {!isDiffieHellman && (
+                 <div>
+                    <div className="flex justify-between px-1 mb-1">
+                      <label className="text-xs font-bold text-slate-500">{labels.decipherInput}</label>
+                      <button onClick={() => setDecState(s => ({...s, input: ''}))}><Trash2 size={12} className="text-slate-400 hover:text-red-500"/></button>
+                    </div>
+                    <textarea value={decState.input} onChange={(e) => setDecState(s => ({ ...s, input: e.target.value }))} placeholder={labels.inputPlaceholder} className="w-full h-32 bg-white/50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm font-mono focus:ring-1 focus:ring-rose-500/50 outline-none resize-none"/>
+                 </div>
+               )}
+
                {/* Output */}
                <div>
                   <div className="flex justify-between px-1 mb-1">
-                    <label className="text-xs font-bold text-slate-500">{labels.decipherOutput}</label>
+                    <label className="text-xs font-bold text-slate-500">{isDiffieHellman ? 'Public Key (B) & Secret' : labels.decipherOutput}</label>
                     <button onClick={() => copyToClipboard(decState.output)}><Copy size={12} className="text-slate-400 hover:text-emerald-500"/></button>
                   </div>
                   <div className="relative">
@@ -467,12 +661,22 @@ const App: React.FC = () => {
                     {!decState.output && <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"><Unlock size={32}/></div>}
                   </div>
                </div>
+
+               {/* DH Exchange Slot for Bob */}
+               {isDiffieHellman && (
+                 <div className="p-3 rounded-lg bg-rose-500/5 border border-rose-500/10">
+                    <label className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase mb-1 block">Receive Alice's Public Key (A)</label>
+                    <div className="flex gap-2">
+                       <input type="number" placeholder="Enter A" value={decState.dhOtherPub} onChange={(e) => setDecState(s => ({...s, dhOtherPub: e.target.value}))} className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono"/>
+                       <button onClick={() => setDecState(s => ({...s, dhOtherPub: encState.output.split('\n')[0]}))} className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 rounded hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors" title="Get from Alice"><ArrowRight size={16}/></button>
+                    </div>
+                 </div>
+               )}
             </div>
-            </div>
+          </div>
           )}
 
         </div>
-
       </main>
 
       <Console logs={logs} lang={lang} />

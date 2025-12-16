@@ -15,6 +15,7 @@ export enum AlgorithmType {
   
   // Asymmetric
   RSA = 'RSA',
+  DIFFIE_HELLMAN = 'DIFFIE_HELLMAN',
   
   // Hashing
   MD5 = 'MD5',
@@ -40,6 +41,7 @@ export const ALGO_CATEGORIES: Record<AlgorithmType, AlgorithmCategory> = {
   [AlgorithmType.DES]: AlgorithmCategory.SYMMETRIC,
   [AlgorithmType.TRIPLE_DES]: AlgorithmCategory.SYMMETRIC,
   [AlgorithmType.RSA]: AlgorithmCategory.ASYMMETRIC,
+  [AlgorithmType.DIFFIE_HELLMAN]: AlgorithmCategory.ASYMMETRIC,
   [AlgorithmType.MD5]: AlgorithmCategory.HASHING,
   [AlgorithmType.SHA1]: AlgorithmCategory.HASHING,
   [AlgorithmType.SHA256]: AlgorithmCategory.HASHING,
@@ -56,6 +58,18 @@ export enum AesMode {
   GCM = 'GCM',
   CBC = 'CBC',
   CTR = 'CTR',
+}
+
+export enum LegacyKeyMode {
+  DES56 = 'DES56',
+  TDES112 = 'TDES112',
+  TDES168 = 'TDES168',
+}
+
+export enum DhGroup {
+  TOY = 'TOY',
+  MODP_14 = 'MODP_14', // 2048-bit
+  MODP_15 = 'MODP_15', // 3072-bit
 }
 
 export enum Sha3Length {
@@ -80,11 +94,17 @@ export interface SectionState {
   shift: number;
   vigenereMode: VigenereMode;
   aesMode: AesMode;
+  legacyKeyMode: LegacyKeyMode;
   sha3Length: Sha3Length;
   // RSA specific
   rsaKeyPair?: CryptoKeyPair; 
   rsaPubPem?: string;
   rsaPrivPem?: string;
+  // Diffie-Hellman specific
+  dhGroup: DhGroup;
+  dhP?: string;
+  dhG?: string;
+  dhOtherPub?: string;
 }
 
 export const LABELS = {
@@ -121,6 +141,7 @@ export const LABELS = {
       DES: 'DES (Legacy Sim)',
       TRIPLE_DES: '3DES (Legacy Sim)',
       RSA: 'RSA (Public Key)',
+      DIFFIE_HELLMAN: 'Diffie-Hellman',
       MD5: 'MD5',
       SHA1: 'SHA-1',
       SHA256: 'SHA-256',
@@ -136,6 +157,7 @@ export const LABELS = {
       DES: 'Vecchio standard a 56 bit. (Simulazione Didattica)',
       TRIPLE_DES: 'Applica DES tre volte per maggiore sicurezza. (Simulazione)',
       RSA: 'Crittografia a chiave pubblica per scambio dati sicuro.',
+      DIFFIE_HELLMAN: 'Protocollo di scambio chiavi per canale insicuro.',
       MD5: 'Hash a 128-bit (Obsoleto, vulnerabile a collisioni).',
       SHA1: 'Hash a 160-bit (Deprecato).',
       SHA256: 'Hash standard a 256-bit (Molto comune).',
@@ -152,11 +174,21 @@ export const LABELS = {
         CBC: 'CBC',
         CTR: 'CTR',
       },
+      legacy: {
+        DES56: '56-bit',
+        TDES112: '112-bit',
+        TDES168: '168-bit',
+      },
       sha3: {
         '224': 'SHA3-224',
         '256': 'SHA3-256',
         '384': 'SHA3-384',
         '512': 'SHA3-512',
+      },
+      dh: {
+        TOY: 'Toy (Edu)',
+        MODP_14: '2048-bit',
+        MODP_15: '3072-bit',
       }
     },
     padding: 'Padding'
@@ -194,6 +226,7 @@ export const LABELS = {
       DES: 'DES (Legacy Sim)',
       TRIPLE_DES: '3DES (Legacy Sim)',
       RSA: 'RSA (Public Key)',
+      DIFFIE_HELLMAN: 'Diffie-Hellman',
       MD5: 'MD5',
       SHA1: 'SHA-1',
       SHA256: 'SHA-256',
@@ -209,6 +242,7 @@ export const LABELS = {
       DES: 'Old 56-bit standard. (Educational Simulation)',
       TRIPLE_DES: 'Applies DES three times. (Simulation)',
       RSA: 'Public-key cryptography for secure data exchange.',
+      DIFFIE_HELLMAN: 'Key exchange protocol for insecure channels.',
       MD5: '128-bit Hash (Obsolete, collision vulnerable).',
       SHA1: '160-bit Hash (Deprecated).',
       SHA256: 'Standard 256-bit Hash (Common).',
@@ -225,11 +259,21 @@ export const LABELS = {
         CBC: 'CBC',
         CTR: 'CTR',
       },
+      legacy: {
+        DES56: '56-bit',
+        TDES112: '112-bit',
+        TDES168: '168-bit',
+      },
       sha3: {
         '224': 'SHA3-224',
         '256': 'SHA3-256',
         '384': 'SHA3-384',
         '512': 'SHA3-512',
+      },
+      dh: {
+        TOY: 'Toy (Edu)',
+        MODP_14: '2048-bit',
+        MODP_15: '3072-bit',
       }
     },
     padding: 'Padding Scheme'

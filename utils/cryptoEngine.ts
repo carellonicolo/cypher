@@ -1,6 +1,10 @@
 // Utility to handle pure logic
-import { AesMode, AlgorithmType, VigenereMode, Sha3Length } from '../types';
-import { sha3_224, sha3_256, sha3_384, sha3_512 } from 'js-sha3';
+import { AesMode, AlgorithmType, VigenereMode, Sha3Length, LegacyKeyMode, DhGroup } from '../types';
+
+// Access global libraries loaded via <script> tags in index.html
+// This avoids ESM import crashes for legacy libraries
+const getGlobalMD5 = () => (window as any).md5;
+const getGlobalSHA3 = () => (window as any).sha3_512 ? (window as any) : null;
 
 /* ================= CLASSICAL ALGORITHMS ================= */
 
@@ -146,18 +150,31 @@ export const computeHash = async (text: string, algo: AlgorithmType, sha3Len: Sh
   if (!text) return "";
   
   if (algo === AlgorithmType.MD5) {
-      return "098f6bcd4621d373cade4e832627b4f6 (MD5 requires external lib)";
+      try {
+        const md5Func = getGlobalMD5();
+        if (typeof md5Func === 'function') {
+           return md5Func(text);
+        }
+        return "Error: MD5 library failed to load";
+      } catch (e) {
+        return "Error computing MD5: " + String(e);
+      }
   }
 
   if (algo === AlgorithmType.SHA3) {
     try {
-      switch (sha3Len) {
-        case Sha3Length.L224: return sha3_224(text);
-        case Sha3Length.L256: return sha3_256(text);
-        case Sha3Length.L384: return sha3_384(text);
-        case Sha3Length.L512: return sha3_512(text);
-        default: return sha3_512(text);
+      const sha3Lib = getGlobalSHA3();
+      if (!sha3Lib) return "Error: SHA3 library failed to load via Script Tag.";
+      
+      const funcName = `sha3_${sha3Len}`;
+      if (typeof sha3Lib[funcName] === 'function') {
+          return sha3Lib[funcName](text);
+      } else if (typeof sha3Lib === 'function' && sha3Len === Sha3Length.L512) {
+          // Sometimes library is just the function itself
+          return sha3Lib(text);
       }
+
+      return "Error: SHA3 function not found.";
     } catch (e) {
       return "Error computing SHA3: " + String(e);
     }
@@ -268,17 +285,44 @@ export const aesDecrypt = async (ciphertext: string, password: string, mode: Aes
 // --- Legacy Simulations (DES/3DES) ---
 // Since DES/3DES are removed from WebCrypto, we simulate them using AES with weakened parameters or visual shifts
 // to purely demonstrate the concept in an educational app without 500 lines of polyfill code.
-export const legacySimulationEncrypt = (text: string, type: 'DES' | '3DES'): string => {
-  // Educational Simulation: Just scramble Base64 to look like ciphertext
-  return `[${type}-SIMULATED]::` + window.btoa(text.split('').reverse().join('')); 
+export const legacySimulationEncrypt = (text: string, type: 'DES' | '3DES', mode: LegacyKeyMode): string => {
+  // Enhanced Simulation: Varies transformation based on key length
+  let processed = text;
+  
+  // Basic scrambling based on mode
+  if (mode === LegacyKeyMode.DES56) {
+      // Simple reverse
+      processed = text.split('').reverse().join('');
+  } else if (mode === LegacyKeyMode.TDES112) {
+      // Simulate double encryption strength by char shift + reverse
+      processed = text.split('').map(c => String.fromCharCode(c.charCodeAt(0) + 1)).reverse().join('');
+  } else if (mode === LegacyKeyMode.TDES168) {
+       // Simulate triple encryption strength by stronger char shift + reverse
+      processed = text.split('').map(c => String.fromCharCode(c.charCodeAt(0) + 2)).reverse().join('');
+  } else {
+      processed = text.split('').reverse().join('');
+  }
+
+  return `[${type}-${mode}-SIMULATED]::` + window.btoa(processed); 
 };
 
-export const legacySimulationDecrypt = (text: string, type: 'DES' | '3DES'): string => {
-  const prefix = `[${type}-SIMULATED]::`;
-  if (!text.startsWith(prefix)) return "Error: Invalid Legacy format";
-  const payload = text.replace(prefix, '');
+export const legacySimulationDecrypt = (text: string, type: 'DES' | '3DES', mode: LegacyKeyMode): string => {
+  const possiblePrefix = `[${type}-${mode}-SIMULATED]::`;
+  if (!text.startsWith(possiblePrefix)) return `Error: Invalid Format for ${mode}`;
+  
+  const payload = text.replace(possiblePrefix, '');
   try {
-    return window.atob(payload).split('').reverse().join('');
+    const decoded = window.atob(payload);
+    
+    if (mode === LegacyKeyMode.DES56) {
+        return decoded.split('').reverse().join('');
+    } else if (mode === LegacyKeyMode.TDES112) {
+        return decoded.split('').reverse().map(c => String.fromCharCode(c.charCodeAt(0) - 1)).join('');
+    } else if (mode === LegacyKeyMode.TDES168) {
+        return decoded.split('').reverse().map(c => String.fromCharCode(c.charCodeAt(0) - 2)).join('');
+    } else {
+        return decoded.split('').reverse().join('');
+    }
   } catch { return "Error"; }
 };
 
@@ -331,4 +375,105 @@ export const rsaDecrypt = async (text: string, privateKey: CryptoKey): Promise<s
     );
     return dec.decode(decrypted);
   } catch(e) { return "RSA Decrypt Error (Key Mismatch?)"; }
+};
+
+/* ================= DIFFIE-HELLMAN ================= */
+
+// RFC 3526 Groups (MODP)
+// Storing as BigInt compatible hex strings (0x...)
+const DH_GROUPS = {
+  // Group 14 (2048-bit)
+  [DhGroup.MODP_14]: {
+    p: "0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF",
+    g: "2"
+  },
+  // Group 15 (3072-bit)
+  [DhGroup.MODP_15]: {
+    p: "0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF",
+    g: "2"
+  }
+};
+
+const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+// Checks if n is prime (simple check for educational primes < 10000)
+const isPrime = (n: number) => {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
+};
+
+export const dhGenerateParams = (group: DhGroup = DhGroup.TOY): { p: string, g: string } => {
+  if (group === DhGroup.TOY) {
+    let p = 0;
+    while (!isPrime(p)) {
+      p = getRandomInt(1000, 9999);
+    }
+    const g = getRandomInt(2, 50); 
+    return { p: p.toString(), g: g.toString() };
+  } else {
+    // For RFC groups, return the BigInt string representation (decimal)
+    // The constants are hex, BigInt(hex) works.
+    const params = DH_GROUPS[group];
+    return { 
+        p: BigInt(params.p).toString(), 
+        g: BigInt(params.g).toString() 
+    };
+  }
+};
+
+export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY): string => {
+    if (group === DhGroup.TOY) {
+        const prime = parseInt(pStr);
+        if(isNaN(prime)) return "6";
+        return getRandomInt(2, prime - 2).toString();
+    } else {
+        // Generate a cryptographically secure random number (e.g., 256 bits)
+        // 256 bits is standard for typical DH security levels, even with larger moduli.
+        const array = new Uint8Array(32); 
+        window.crypto.getRandomValues(array);
+        let hex = "0x";
+        for(let i=0; i<array.length; i++) {
+            hex += array[i].toString(16).padStart(2, '0');
+        }
+        return BigInt(hex).toString();
+    }
+};
+
+// Modular Exponentiation: (base^exp) % mod
+const modPow = (base: bigint, exp: bigint, mod: bigint): bigint => {
+  let res = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp % 2n === 1n) res = (res * base) % mod;
+    exp = exp / 2n;
+    base = (base * base) % mod;
+  }
+  return res;
+};
+
+export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPubStr?: string): { pub: string, shared?: string } => {
+  try {
+    const p = BigInt(pStr);
+    const g = BigInt(gStr);
+    const priv = BigInt(privStr);
+    
+    // Calculate Public Key: A = g^a mod p
+    const pub = modPow(g, priv, p);
+    
+    let shared;
+    if (otherPubStr && otherPubStr.trim() !== "") {
+      const otherPub = BigInt(otherPubStr);
+      // Calculate Shared Secret: S = B^a mod p
+      shared = modPow(otherPub, priv, p).toString();
+    }
+    
+    return { pub: pub.toString(), shared };
+  } catch (e) {
+    return { pub: "Invalid Parameters" };
+  }
 };
