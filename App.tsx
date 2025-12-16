@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Console from './components/Console';
+import InfoModal from './components/InfoModal';
 import { 
   AlgorithmType, Language, Theme, LABELS, LogEntry, SectionState, 
-  VigenereMode, AesMode, AlgorithmCategory, ALGO_CATEGORIES, Sha3Length, LegacyKeyMode, DhGroup 
+  VigenereMode, AesMode, AlgorithmCategory, ALGO_CATEGORIES, Sha3Length, LegacyKeyMode, DhGroup, DhBitLength
 } from './types';
 import { 
   caesarCipher, vigenereCipher, aesEncrypt, aesDecrypt, 
@@ -14,7 +15,7 @@ import {
 } from './utils/cryptoEngine';
 import { 
   Lock, Unlock, Copy, Trash2, Settings2, ArrowRight, ArrowLeft,
-  ShieldCheck, Hash, Key, BookOpen, RefreshCw, Zap
+  ShieldCheck, Hash, Key, BookOpen, RefreshCw, Zap, HelpCircle
 } from 'lucide-react';
 
 // Reusable Segmented Control
@@ -54,16 +55,23 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<Theme>('dark');
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [algorithm, setAlgorithm] = useState<AlgorithmType>(AlgorithmType.CAESAR);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   
+  // Animation States for DH
+  const [transferAnim, setTransferAnim] = useState<'toBob' | 'toAlice' | null>(null);
+  const [highlightBobInput, setHighlightBobInput] = useState(false);
+  const [highlightAliceInput, setHighlightAliceInput] = useState(false);
+  const [highlightDhParams, setHighlightDhParams] = useState(false);
+
   // Independent States
   const [encState, setEncState] = useState<SectionState>({
     input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512, legacyKeyMode: LegacyKeyMode.DES56,
-    dhGroup: DhGroup.TOY, dhP: '', dhG: '', dhOtherPub: ''
+    dhGroup: DhGroup.TOY, dhBitLength: DhBitLength.NATIVE, dhP: '', dhG: '', dhOtherPub: ''
   });
   
   const [decState, setDecState] = useState<SectionState>({
     input: '', output: '', key: '', shift: 3, vigenereMode: VigenereMode.REPEATING, aesMode: AesMode.GCM, sha3Length: Sha3Length.L512, legacyKeyMode: LegacyKeyMode.DES56,
-    dhGroup: DhGroup.TOY, dhP: '', dhG: '', dhOtherPub: ''
+    dhGroup: DhGroup.TOY, dhBitLength: DhBitLength.NATIVE, dhP: '', dhG: '', dhOtherPub: ''
   });
 
   const category = ALGO_CATEGORIES[algorithm];
@@ -99,8 +107,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (algorithm === AlgorithmType.DIFFIE_HELLMAN && !encState.dhP) {
       const params = dhGenerateParams(encState.dhGroup);
-      const privKeyA = dhGeneratePrivateKey(params.p, encState.dhGroup);
-      const privKeyB = dhGeneratePrivateKey(params.p, encState.dhGroup);
+      const privKeyA = dhGeneratePrivateKey(params.p, encState.dhGroup, encState.dhBitLength);
+      const privKeyB = dhGeneratePrivateKey(params.p, encState.dhGroup, decState.dhBitLength);
       
       setEncState(s => ({ ...s, dhP: params.p, dhG: params.g, key: privKeyA }));
       setDecState(s => ({ ...s, dhP: params.p, dhG: params.g, key: privKeyB }));
@@ -112,8 +120,8 @@ const App: React.FC = () => {
   // Handle DH Group Change
   const changeDhGroup = (group: DhGroup) => {
       const params = dhGenerateParams(group);
-      const privKeyA = dhGeneratePrivateKey(params.p, group);
-      const privKeyB = dhGeneratePrivateKey(params.p, group);
+      const privKeyA = dhGeneratePrivateKey(params.p, group, encState.dhBitLength);
+      const privKeyB = dhGeneratePrivateKey(params.p, group, decState.dhBitLength);
       
       setEncState(s => ({ ...s, dhGroup: group, dhP: params.p, dhG: params.g, key: privKeyA, output: '', dhOtherPub: '' }));
       setDecState(s => ({ ...s, dhGroup: group, dhP: params.p, dhG: params.g, key: privKeyB, output: '', dhOtherPub: '' }));
@@ -276,6 +284,8 @@ const App: React.FC = () => {
   // Helper for DH Param Sync
   const syncDhParams = () => {
     setDecState(s => ({ ...s, dhGroup: encState.dhGroup, dhP: encState.dhP, dhG: encState.dhG }));
+    setHighlightDhParams(true);
+    setTimeout(() => setHighlightDhParams(false), 500);
     addLog('Parameters synced from Alice to Bob', 'info');
   };
 
@@ -288,12 +298,40 @@ const App: React.FC = () => {
   
   const generateNewDhKey = (party: 'alice' | 'bob') => {
     if (party === 'alice') {
-        setEncState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup) }));
+        setEncState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup, s.dhBitLength) }));
     } else {
-        setDecState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup) }));
+        setDecState(s => ({ ...s, key: dhGeneratePrivateKey(s.dhP || '1000', s.dhGroup, s.dhBitLength) }));
     }
     addLog(`New Private Key generated for ${party}`, 'info');
   }
+
+  const sendPubToBob = () => {
+    const pubKey = encState.output.split('\n')[0];
+    if (!pubKey || pubKey.startsWith('Error')) return;
+    
+    setTransferAnim('toBob');
+    setTimeout(() => {
+        setDecState(s => ({...s, dhOtherPub: pubKey}));
+        setTransferAnim(null);
+        setHighlightBobInput(true);
+        setTimeout(() => setHighlightBobInput(false), 500);
+        addLog('Alice sent Public Key to Bob', 'info');
+    }, 800);
+  };
+
+  const sendPubToAlice = () => {
+    const pubKey = decState.output.split('\n')[0];
+    if (!pubKey || pubKey.startsWith('Error')) return;
+    
+    setTransferAnim('toAlice');
+    setTimeout(() => {
+        setEncState(s => ({...s, dhOtherPub: pubKey}));
+        setTransferAnim(null);
+        setHighlightAliceInput(true);
+        setTimeout(() => setHighlightAliceInput(false), 500);
+        addLog('Bob sent Public Key to Alice', 'info');
+    }, 800);
+  };
 
   const getCategoryIcon = (cat: AlgorithmCategory) => {
     switch(cat) {
@@ -304,13 +342,35 @@ const App: React.FC = () => {
     }
   };
 
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1280;
+
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 selection:bg-indigo-500/30 transition-colors duration-300">
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 bg-grid-pattern opacity-60 dark:opacity-40 pointer-events-none transition-opacity duration-300" />
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-slate-100/0 via-slate-100/80 to-slate-200 dark:from-slate-900/0 dark:via-slate-900/50 dark:to-slate-950 pointer-events-none transition-colors duration-300" />
       
-      <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
+      {/* Dynamic Keyframes for DH Animation */}
+      <style>{`
+        @keyframes fly-right { 0% { left: 20%; opacity: 0; transform: scale(0.5); } 20% { opacity: 1; transform: scale(1.2); } 80% { opacity: 1; transform: scale(1.2); } 100% { left: 80%; opacity: 0; transform: scale(0.5); } }
+        @keyframes fly-left { 0% { left: 80%; opacity: 0; transform: scale(0.5); } 20% { opacity: 1; transform: scale(1.2); } 80% { opacity: 1; transform: scale(1.2); } 100% { left: 20%; opacity: 0; transform: scale(0.5); } }
+        @keyframes fly-down { 0% { top: 20%; opacity: 0; transform: scale(0.5); } 20% { opacity: 1; transform: scale(1.2); } 80% { opacity: 1; transform: scale(1.2); } 100% { top: 80%; opacity: 0; transform: scale(0.5); } }
+        @keyframes fly-up { 0% { top: 80%; opacity: 0; transform: scale(0.5); } 20% { opacity: 1; transform: scale(1.2); } 80% { opacity: 1; transform: scale(1.2); } 100% { top: 20%; opacity: 0; transform: scale(0.5); } }
+      `}</style>
+
+      <Header 
+        lang={lang} 
+        setLang={setLang} 
+        theme={theme} 
+        setTheme={setTheme} 
+      />
+      
+      <InfoModal 
+        isOpen={isInfoModalOpen} 
+        onClose={() => setIsInfoModalOpen(false)} 
+        algorithm={algorithm} 
+        lang={lang}
+      />
 
       <main className="relative z-10 pt-24 px-4 pb-20 max-w-7xl mx-auto min-h-screen flex flex-col lg:flex-row gap-6">
         
@@ -325,7 +385,8 @@ const App: React.FC = () => {
 
                 return (
                   <div key={cat} className="flex flex-col gap-1">
-                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 px-2 flex items-center gap-2">
+                    {/* UPDATED HEADER STYLE */}
+                    <h3 className="text-xs font-bold text-indigo-900 dark:text-indigo-100 uppercase tracking-widest mb-2 px-3 py-1.5 bg-indigo-50/80 dark:bg-indigo-500/20 rounded-lg border border-indigo-100 dark:border-indigo-500/30 flex items-center gap-2 shadow-sm">
                        {getCategoryIcon(cat)} {labels.categories[cat]}
                     </h3>
                     <div className="space-y-1">
@@ -359,8 +420,17 @@ const App: React.FC = () => {
 
            {/* Info Card */}
            <div className="glass-panel p-5 rounded-xl hidden lg:flex flex-col gap-3">
-             <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-1">
-               <Settings2 size={20} />
+             <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-1">
+                  <Settings2 size={20} />
+                </div>
+                <button 
+                  onClick={() => setIsInfoModalOpen(true)}
+                  className="p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors"
+                  title="Learn more"
+                >
+                  <HelpCircle size={16} />
+                </button>
              </div>
              <h3 className="font-semibold text-slate-800 dark:text-slate-200">{labels.algorithms[algorithm]}</h3>
              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -370,7 +440,29 @@ const App: React.FC = () => {
         </aside>
 
         {/* Main Grid */}
-        <div className={`flex-1 grid grid-cols-1 ${isHashing ? 'xl:grid-cols-1' : 'xl:grid-cols-2'} gap-6 w-full`}>
+        <div className={`flex-1 grid grid-cols-1 ${isHashing ? 'xl:grid-cols-1' : 'xl:grid-cols-2'} gap-6 w-full relative`}>
+          
+          {/* ANIMATION OVERLAY */}
+          {transferAnim && (
+             <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
+                <div 
+                   className="absolute bg-white dark:bg-slate-800 p-3 rounded-full shadow-2xl border-2 border-indigo-500 text-indigo-500 z-50 flex items-center justify-center"
+                   style={{
+                     // Simple positioning relative to container center
+                     // Desktop: move horizontally. Mobile: move vertically.
+                     top: isDesktop ? '30%' : '50%', 
+                     left: isDesktop ? '50%' : '50%',
+                     animation: `${
+                        transferAnim === 'toBob' 
+                          ? (isDesktop ? 'fly-right' : 'fly-down')
+                          : (isDesktop ? 'fly-left' : 'fly-up')
+                     } 0.8s ease-in-out forwards`
+                   }}
+                >
+                   <Key size={24} />
+                </div>
+             </div>
+          )}
           
           {/* ================= ENCRYPTION / ALICE PANEL ================= */}
           <div className={`glass-panel rounded-2xl flex flex-col overflow-hidden shadow-xl dark:shadow-2xl ring-1 ring-indigo-500/20 animate-in zoom-in-95 duration-500 h-fit ${isHashing ? 'max-w-3xl mx-auto w-full' : ''}`}>
@@ -422,6 +514,25 @@ const App: React.FC = () => {
                             <button onClick={() => generateNewDhKey('alice')} className="text-[10px] text-indigo-500 hover:underline flex items-center gap-1"><Zap size={10}/> Randomize</button>
                           </div>
                           <input type="text" value={encState.key} onChange={(e) => setEncState(s => ({...s, key: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono truncate focus:truncate-none"/>
+                       </div>
+
+                       {/* New: Key Bit Length Selector */}
+                       <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Key Bit Length (Demo)</label>
+                          <SegmentedControl 
+                            options={Object.values(DhBitLength)} 
+                            value={encState.dhBitLength} 
+                            onChange={(v) => {
+                                const newLen = v as DhBitLength;
+                                setEncState(s => ({
+                                    ...s, 
+                                    dhBitLength: newLen,
+                                    key: dhGeneratePrivateKey(s.dhP || '', s.dhGroup, newLen)
+                                }));
+                            }} 
+                            labelMap={labels.modes.dhBitLength} 
+                            color="indigo" 
+                          />
                        </div>
                     </div>
                 )}
@@ -507,6 +618,14 @@ const App: React.FC = () => {
                     <label className="text-xs font-bold text-slate-500">{isDiffieHellman ? 'Public Key (A) & Secret' : labels.cipherOutput}</label>
                     <div className="flex gap-2">
                        {encState.output && !isHashing && !isDiffieHellman && <button onClick={transferToDecrypt} className="flex items-center gap-1 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded transition-colors uppercase font-bold tracking-wider" title={labels.transfer}>{labels.transfer} <ArrowRight size={10}/></button>}
+                       
+                       {/* New: Send to Bob */}
+                       {isDiffieHellman && encState.output && (
+                           <button onClick={sendPubToBob} disabled={!!transferAnim} className="flex items-center gap-1 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 disabled:opacity-50 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded transition-colors uppercase font-bold tracking-wider" title="Send Public Key to Bob">
+                               Send to Bob <ArrowRight size={10}/>
+                           </button>
+                       )}
+
                        <button onClick={() => copyToClipboard(encState.output)}><Copy size={12} className="text-slate-400 hover:text-emerald-500"/></button>
                     </div>
                   </div>
@@ -518,7 +637,7 @@ const App: React.FC = () => {
 
                {/* DH Exchange Slot */}
                {isDiffieHellman && (
-                 <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                 <div className={`p-3 rounded-lg border transition-all duration-300 ${highlightAliceInput ? 'ring-2 ring-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)] bg-rose-50 dark:bg-rose-900/20' : 'bg-indigo-500/5 border-indigo-500/10'}`}>
                     <label className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1 block">Receive Bob's Public Key (B)</label>
                     <div className="flex gap-2">
                        <input type="number" placeholder="Enter B" value={encState.dhOtherPub} onChange={(e) => setEncState(s => ({...s, dhOtherPub: e.target.value}))} className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono"/>
@@ -564,13 +683,13 @@ const App: React.FC = () => {
                        <div className="flex items-end gap-3">
                           <div className="flex-1 space-y-1">
                             <label className="text-[10px] font-bold text-slate-500 uppercase">Prime (p)</label>
-                            <input type="text" readOnly value={decState.dhP} onChange={(e) => setDecState(s => ({...s, dhP: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400 truncate focus:truncate-none" title={decState.dhP}/>
+                            <input type="text" readOnly value={decState.dhP} onChange={(e) => setDecState(s => ({...s, dhP: e.target.value}))} className={`w-full rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400 truncate focus:truncate-none transition-all duration-500 ${highlightDhParams ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-500 ring-2 ring-rose-500/50' : 'bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700'}`} title={decState.dhP}/>
                           </div>
                           <div className="w-20 space-y-1">
                              <label className="text-[10px] font-bold text-slate-500 uppercase">Gen (g)</label>
-                             <input type="text" readOnly value={decState.dhG} onChange={(e) => setDecState(s => ({...s, dhG: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400"/>
+                             <input type="text" readOnly value={decState.dhG} onChange={(e) => setDecState(s => ({...s, dhG: e.target.value}))} className={`w-full rounded-md px-3 py-1.5 text-sm font-mono text-rose-600 dark:text-rose-400 transition-all duration-500 ${highlightDhParams ? 'bg-rose-100 dark:bg-rose-900/30 border-rose-500 ring-2 ring-rose-500/50' : 'bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700'}`}/>
                           </div>
-                          <button onClick={syncDhParams} className="h-[34px] px-3 bg-rose-500 hover:bg-rose-600 text-white rounded-md transition-colors" title="Copy Params from Alice"><ArrowLeft size={14}/></button>
+                          <button onClick={syncDhParams} className="h-[34px] px-3 bg-rose-500 hover:bg-rose-600 text-white rounded-md transition-colors flex items-center gap-2 text-[10px] font-bold uppercase" title="Sync Params from Alice"><ArrowLeft size={14}/> Sync</button>
                        </div>
                        
                        <div className="space-y-1">
@@ -579,6 +698,25 @@ const App: React.FC = () => {
                             <button onClick={() => generateNewDhKey('bob')} className="text-[10px] text-rose-500 hover:underline flex items-center gap-1"><Zap size={10}/> Randomize</button>
                           </div>
                           <input type="text" value={decState.key} onChange={(e) => setDecState(s => ({...s, key: e.target.value}))} className="w-full bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono truncate focus:truncate-none"/>
+                       </div>
+
+                        {/* New: Key Bit Length Selector */}
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">Key Bit Length (Demo)</label>
+                          <SegmentedControl 
+                            options={Object.values(DhBitLength)} 
+                            value={decState.dhBitLength} 
+                            onChange={(v) => {
+                                const newLen = v as DhBitLength;
+                                setDecState(s => ({
+                                    ...s, 
+                                    dhBitLength: newLen,
+                                    key: dhGeneratePrivateKey(s.dhP || '', s.dhGroup, newLen)
+                                }));
+                            }} 
+                            labelMap={labels.modes.dhBitLength} 
+                            color="rose" 
+                          />
                        </div>
                     </div>
                 )}
@@ -654,7 +792,15 @@ const App: React.FC = () => {
                <div>
                   <div className="flex justify-between px-1 mb-1">
                     <label className="text-xs font-bold text-slate-500">{isDiffieHellman ? 'Public Key (B) & Secret' : labels.decipherOutput}</label>
-                    <button onClick={() => copyToClipboard(decState.output)}><Copy size={12} className="text-slate-400 hover:text-emerald-500"/></button>
+                    <div className="flex gap-2">
+                       {/* New: Send to Alice */}
+                       {isDiffieHellman && decState.output && (
+                           <button onClick={sendPubToAlice} disabled={!!transferAnim} className="flex items-center gap-1 text-[10px] bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-50 text-rose-600 dark:text-rose-300 px-2 py-0.5 rounded transition-colors uppercase font-bold tracking-wider" title="Send Public Key to Alice">
+                               <ArrowLeft size={10}/> Send to Alice
+                           </button>
+                       )}
+                       <button onClick={() => copyToClipboard(decState.output)}><Copy size={12} className="text-slate-400 hover:text-emerald-500"/></button>
+                    </div>
                   </div>
                   <div className="relative">
                     <textarea readOnly value={decState.output} placeholder={labels.outputPlaceholder} className="w-full h-32 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-xl p-3 text-sm font-mono text-rose-600 dark:text-rose-300 outline-none resize-none"/>
@@ -664,7 +810,7 @@ const App: React.FC = () => {
 
                {/* DH Exchange Slot for Bob */}
                {isDiffieHellman && (
-                 <div className="p-3 rounded-lg bg-rose-500/5 border border-rose-500/10">
+                 <div className={`p-3 rounded-lg border transition-all duration-300 ${highlightBobInput ? 'ring-2 ring-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] bg-indigo-50 dark:bg-indigo-900/20' : 'bg-rose-500/5 border-rose-500/10'}`}>
                     <label className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase mb-1 block">Receive Alice's Public Key (A)</label>
                     <div className="flex gap-2">
                        <input type="number" placeholder="Enter A" value={decState.dhOtherPub} onChange={(e) => setDecState(s => ({...s, dhOtherPub: e.target.value}))} className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-1.5 text-sm font-mono"/>

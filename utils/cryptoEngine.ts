@@ -1,5 +1,5 @@
 // Utility to handle pure logic
-import { AesMode, AlgorithmType, VigenereMode, Sha3Length, LegacyKeyMode, DhGroup } from '../types';
+import { AesMode, AlgorithmType, VigenereMode, Sha3Length, LegacyKeyMode, DhGroup, DhBitLength } from '../types';
 
 // Access global libraries loaded via <script> tags in index.html
 // This avoids ESM import crashes for legacy libraries
@@ -426,14 +426,45 @@ export const dhGenerateParams = (group: DhGroup = DhGroup.TOY): { p: string, g: 
   }
 };
 
-export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY): string => {
+export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY, bitLength: DhBitLength = DhBitLength.NATIVE): string => {
+    // 1. If a specific larger bit length is requested (educational override)
+    if (bitLength !== DhBitLength.NATIVE) {
+        const bits = parseInt(bitLength);
+        const bytes = Math.ceil(bits / 8);
+        const array = new Uint8Array(bytes);
+        window.crypto.getRandomValues(array);
+        let hex = "0x";
+        for(let i=0; i<array.length; i++) {
+            hex += array[i].toString(16).padStart(2, '0');
+        }
+        return BigInt(hex).toString();
+    }
+
+    // 2. Default/Native logic based on group size
     if (group === DhGroup.TOY) {
-        const prime = parseInt(pStr);
-        if(isNaN(prime)) return "6";
-        return getRandomInt(2, prime - 2).toString();
+        try {
+            const prime = BigInt(pStr);
+            if (prime <= 2n) return "2";
+
+            // If prime is small enough for standard Math.random logic (safe integer limit 2^53 - 1)
+            // Note: BigInt comparison with BigInt
+            if (prime < 9007199254740991n) {
+                const pNum = Number(prime);
+                return getRandomInt(2, Math.max(2, pNum - 2)).toString();
+            } else {
+                 // For manually entered large primes in TOY mode, return a safe random smallish BigInt or based on bit length
+                 // Just generate a random 32-bit integer for simplicity and safety
+                 const array = new Uint8Array(4); 
+                 window.crypto.getRandomValues(array);
+                 // Ensure it's modulo prime-2 logic roughly, or just random
+                 const r = BigInt("0x" + Array.from(array).map(b => b.toString(16).padStart(2,'0')).join(''));
+                 return (r % (prime - 2n) + 2n).toString();
+            }
+        } catch {
+            return "6";
+        }
     } else {
-        // Generate a cryptographically secure random number (e.g., 256 bits)
-        // 256 bits is standard for typical DH security levels, even with larger moduli.
+        // Standard secure random for real groups (approx 256 bits is standard for key exchange exponents)
         const array = new Uint8Array(32); 
         window.crypto.getRandomValues(array);
         let hex = "0x";
@@ -457,23 +488,50 @@ const modPow = (base: bigint, exp: bigint, mod: bigint): bigint => {
 };
 
 export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPubStr?: string): { pub: string, shared?: string } => {
+  // --- Validation ---
+  const isValidBigInt = (s: string) => {
+    try {
+      BigInt(s);
+      return true;
+    } catch { return false; }
+  };
+
+  if (!pStr || !pStr.trim()) return { pub: "Error: Prime (p) is missing" };
+  if (!isValidBigInt(pStr)) return { pub: "Error: Prime (p) must be a valid number" };
+
+  if (!gStr || !gStr.trim()) return { pub: "Error: Generator (g) is missing" };
+  if (!isValidBigInt(gStr)) return { pub: "Error: Generator (g) must be a valid number" };
+
+  if (!privStr || !privStr.trim()) return { pub: "Error: Private Key is missing" };
+  if (!isValidBigInt(privStr)) return { pub: "Error: Private Key must be a valid number" };
+
   try {
     const p = BigInt(pStr);
     const g = BigInt(gStr);
     const priv = BigInt(privStr);
     
+    if (p <= 1n) return { pub: "Error: Prime (p) must be > 1" };
+    if (g <= 0n) return { pub: "Error: Generator (g) must be positive" };
+
     // Calculate Public Key: A = g^a mod p
     const pub = modPow(g, priv, p);
     
     let shared;
     if (otherPubStr && otherPubStr.trim() !== "") {
-      const otherPub = BigInt(otherPubStr);
-      // Calculate Shared Secret: S = B^a mod p
-      shared = modPow(otherPub, priv, p).toString();
+      if (!isValidBigInt(otherPubStr)) {
+          return { pub: pub.toString(), shared: "Error: Invalid Peer Public Key" };
+      }
+      try {
+        const otherPub = BigInt(otherPubStr);
+        // Calculate Shared Secret: S = B^a mod p
+        shared = modPow(otherPub, priv, p).toString();
+      } catch (e) {
+        shared = "Error: Invalid Peer Public Key";
+      }
     }
     
     return { pub: pub.toString(), shared };
   } catch (e) {
-    return { pub: "Invalid Parameters" };
+    return { pub: "Error: Calculation Failed" };
   }
 };
