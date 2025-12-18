@@ -72,13 +72,21 @@ const Header: React.FC<HeaderProps> = ({
 
         <button 
           onClick={toggleTheme}
-          className="p-3 rounded-2xl hover:bg-white dark:hover:bg-white/10 text-slate-500 transition-all active:scale-90 hover:shadow-lg"
+          className="p-3 rounded-2xl hover:bg-white dark:hover:bg-white/10 text-slate-500 transition-all active:scale-90 hover:shadow-lg group"
         >
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          {theme === 'dark' ? (
+            <Sun size={20} className="group-hover:rotate-12 transition-transform" />
+          ) : (
+            <Moon size={20} className="group-hover:rotate-12 transition-transform" />
+          )}
         </button>
 
-        <a href="https://github.com" target="_blank" className="p-3 rounded-2xl hover:bg-white dark:hover:bg-white/10 text-slate-500 transition-all active:scale-90 hover:shadow-lg">
-          <Github size={20} />
+        <a 
+          href="https://github.com" 
+          target="_blank" 
+          className="p-3 rounded-2xl hover:bg-white dark:hover:bg-white/10 text-slate-500 transition-all active:scale-90 hover:shadow-lg group"
+        >
+          <Github size={20} className="group-hover:rotate-12 transition-transform" />
         </a>
       </div>
     </header>

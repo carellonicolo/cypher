@@ -42,7 +42,11 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentProfile, setProfil
         }`}
         title="Change Visual Style"
       >
-        <Palette size={20} strokeWidth={isOpen ? 2.5 : 2} />
+        <Palette 
+          size={20} 
+          strokeWidth={isOpen ? 2.5 : 2} 
+          className="group-hover:rotate-12 transition-transform"
+        />
       </button>
 
       {isOpen && (
