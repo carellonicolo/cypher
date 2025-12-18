@@ -170,7 +170,7 @@ export interface SectionState {
 export const LABELS = {
   it: {
     title: 'CryptoFlow',
-    subtitle: 'Research Hub for Cryptographic Sciences',
+    subtitle: 'Advanced Scientific Cryptography Hub',
     inputPlaceholder: 'Inserisci il dataset testuale o il ciphertext...',
     outputPlaceholder: 'In attesa dell\'output computazionale...',
     cipherInput: 'Input Originale (Plaintext)',
@@ -208,15 +208,15 @@ export const LABELS = {
       ASYMMETRIC: 'Sistemi Asimmetrici',
       HASHING: 'Funzioni di Hash',
       MAC: 'Message Auth Codes (MAC)',
-      GENERAL: 'Introduzione alla Crittografia'
+      GENERAL: 'Scienza Crittografica'
     },
     categoryDetails: {
-      GENERAL: "La **Crittografia moderna** è la scienza matematica che si occupa della protezione delle informazioni attraverso la trasformazione dei dati in forme incomprensibili per soggetti non autorizzati. Fondata sui lavori seminali di **Claude Shannon** (Teoria dell'Informazione) e di **Auguste Kerckhoffs**, essa non si limita all'offuscamento, ma garantisce proprietà fondamentali:\n\n1. **Confidenzialità**: Assicura che solo il destinatario legittimo possa accedere al contenuto informativo.\n2. **Integrità**: Rileva alterazioni non autorizzate, garantendo che il dato non sia stato modificato durante il transito.\n3. **Autenticità**: Verifica l'identità dell'origine del dato.\n4. **Non-ripudiabilità**: Impedisce a un mittente di negare l'invio di un messaggio.\n\nIl principio cardine è il **Principio di Kerckhoffs**: la sicurezza di un sistema crittografico non deve dipendere dal segreto dell'algoritmo (Security through obscurity), ma esclusivamente dal segreto della chiave.",
-      CLASSICAL: "I **Cifrari Classici** costituiscono le fondamenta storiche della disciplina, risalendo fino all'epoca antica. Operano primariamente su unità discrete di informazione (caratteri alfabetici) attraverso due primitive fondamentali:\n\n• **Sostituzione**: Ogni elemento del plaintext è mappato in un elemento del ciphertext secondo una legge fissa o variabile.\n• **Trasposizione**: Gli elementi del plaintext mantengono la loro identità ma vengono permutati spazialmente.\n\nNonostante la loro semplicità formale, questi sistemi hanno introdotto concetti chiave come lo **Spazio delle Chiavi** e la vulnerabilità statistica. La crittanalisi di questi cifrari si basa sull'**Analisi delle Frequenze**: ogni lingua naturale presenta una distribuzione statistica predicibile (es. la 'e' è la lettera più frequente in molte lingue europee), che i cifrari classici tendono a non mascherare sufficientemente.",
-      SYMMETRIC: "La **Crittografia Simmetrica** (o a chiave privata) impiega la medesima chiave per le operazioni di cifratura e decifratura. Si distingue per un'estrema efficienza computazionale, rendendola ideale per la protezione di flussi dati ad alta velocità (Big Data, streaming).\n\nSi divide in due rami principali:\n1. **Block Ciphers**: Elaborano i dati in blocchi di dimensione fissa (es. AES-128 opera su blocchi di 128 bit). Utilizzano strutture a rete di Feistel o reti di Sostituzione-Permutazione (SPN).\n2. **Stream Ciphers**: Cifrano i dati un bit o un byte alla volta, generando un 'keystream' pseudo-casuale combinato tramite XOR con il plaintext.\n\nIl limite teorico risiede nella **Distribuzione delle Chiavi**: Alice e Bob devono scambiarsi la chiave segreta attraverso un canale sicuro prima di poter comunicare in modo cifrato.",
-      ASYMMETRIC: "La **Crittografia Asimmetrica** (a chiave pubblica), formalizzata da Whitfield Diffie e Martin Hellman nel 1976, ha risolto il problema della distribuzione delle chiavi. Si basa sull'esistenza di **Funzioni Trapdoor**: operazioni matematiche facili da calcolare in una direzione, ma computazionalmente impossibili da invertire senza una 'scorciatoia' (la chiave privata).\n\nEsempi di problemi matematici difficili utilizzati:\n• **Fattorizzazione Intera**: Moltiplicare due grandi numeri primi è banale, ma fattorizzare il loro prodotto è estremamente lento (RSA).\n• **Logaritmo Discreto**: Calcolare $g^x \\pmod p$ è rapido, ma trovare $x$ conoscendo il risultato è intrattabile (Diffie-Hellman, DSA).\n• **Curve Ellittiche (ECC)**: Basate sulla difficoltà di risolvere il logaritmo discreto su gruppi definiti da punti su una curva, offrendo sicurezza superiore con chiavi molto più brevi.",
-      HASHING: "Una **Funzione Hash crittografica** è un algoritmo deterministico che mappa un input di lunghezza arbitraria in un output di lunghezza fissa, detto *digest*. A differenza della cifratura, l'hashing è un processo **unidirezionale** e non invertibile.\n\nProprietà formali richieste per scopi crittografici:\n• **Resistenza alla Pre-immagine**: Dato un digest *h*, è impossibile trovare un input *m* tale che *H(m) = h*.\n• **Resistenza alla Collisione**: È impossibile trovare due input distinti *m1* e *m2* che producano lo stesso digest.\n• **Effetto Valanga**: Una minima variazione dell'input (anche un singolo bit) deve produrre un digest radicalmente differente.\n\nUtilizzate per la verifica dell'integrità dei file, lo storage delle password e come componente fondamentale delle firme digitali e della tecnologia Blockchain.",
-      MAC: "I **Message Authentication Codes (MAC)** sono meccanismi di sicurezza che garantiscono sia l'integrità che l'autenticità di un messaggio attraverso l'uso di una chiave segreta condivisa.\n\nA differenza di un semplice Hash (che protegge solo da alterazioni accidentali), un MAC protegge da **attacchi attivi**. Un attaccante che intercetta un messaggio non può rigenerare un MAC valido senza conoscere la chiave segreta. Esistono due standard principali:\n• **HMAC**: Basato su funzioni di Hash (come SHA-256). Utilizza una costruzione a doppio hashing per prevenire attacchi di estensione della lunghezza.\n• **CMAC**: Basato su cifrari a blocchi (come AES). Utilizza la modalità CBC ma con un raffinamento finale per gestire messaggi di lunghezza variabile in modo sicuro."
+      GENERAL: "La **Crittografia moderna** rappresenta l'intersezione tra matematica pura, informatica teorica e ingegneria della sicurezza. Non si limita alla mera protezione del segreto, ma costituisce l'infrastruttura di fiducia dell'era digitale.\n\n### Fondamenti Teorici\nIl campo è stato rivoluzionato dai lavori di **Claude Shannon** (Teoria dell'Informazione, 1949), che ha introdotto i concetti di **Confusione** (distruggere la relazione statistica tra chiave e testo cifrato) e **Diffusione** (distribuire l'influenza del plaintext su tutto il ciphertext). Un sistema crittografico moderno deve soddisfare il **Principio di Kerckhoffs**: la sicurezza deve risiedere esclusivamente nella segretezza della chiave, non nell'offuscamento dell'algoritmo.\n\n### Proprietà della Sicurezza\nOltre alla riservatezza, la crittografia garantisce:\n1. **Integrità**: Il dato non è stato alterato (Hash).\n2. **Autenticazione**: L'identità dell'origine è verificata (MAC, Firme).\n3. **Non-ripudio**: L'autore non può negare la paternità dell'azione (Crittografia Asimmetrica).\n\nAttualmente, la ricerca si sta spostando verso la **Crittografia Post-Quantum (PQC)**, volta a resistere ad attacchi basati sull'algoritmo di Shor in grado di rompere RSA ed ECC utilizzando computer quantistici.",
+      CLASSICAL: "I **Cifrari Classici** costituiscono il retaggio storico della disciplina, operando su una semantica di caratteri alfabetici piuttosto che su bit.\n\n### Meccanismi Evolutivi\nSi dividono in due grandi famiglie:\n• **Cifrari a Sostituzione**: Sostituiscono un carattere con un altro. Si evolvono da monoalfabetici (mappatura fissa) a polialfabetici (mappatura variabile, come Vigenère), cercando di mascherare le frequenze statistiche della lingua.\n• **Cifrari a Trasposizione**: Mantengono i caratteri originali ma ne permutano la posizione (es. Rail Fence, Cifrari Colonnari).\n\n### Crittanalisi Storica\nIl punto di rottura di questi sistemi è sempre stato l'**Analisi delle Frequenze**. In ogni lingua naturale, le lettere non appaiono con la stessa probabilità. Ad esempio, in Italiano, la 'E' e la 'A' dominano statisticamente. Un cifrario classico è considerato debole se non riesce a generare un output con una distribuzione di frequenza uniforme (piatta), permettendo a un attaccante di 'indovinare' le mappature basandosi su pattern linguistici ripetitivi.",
+      SYMMETRIC: "La **Crittografia Simmetrica** (o a chiave privata) è la spina dorsale delle comunicazioni moderne ad alte prestazioni grazie alla sua efficienza computazionale.\n\n### Block Ciphers vs Stream Ciphers\n1. **Cifrari a Blocchi**: Elaborano dati in segmenti di dimensione fissa (es. 128 bit per AES). Utilizzano round iterativi di permutazioni e sostituzioni. La loro sicurezza dipende dalla **modalità operativa** (CBC, GCM, etc.), che impedisce a blocchi di plaintext identici di produrre ciphertext identici.\n2. **Cifrari a Flusso**: Generano un flusso di bit pseudo-casuale (keystream) che viene combinato (solitamente tramite XOR) con il messaggio. Sono ideali per lo streaming di dati dove la latenza deve essere minima.\n\n### Il Problema della Distribuzione\nIl limite intrinseco è lo scambio della chiave: come possono due parti che non si sono mai incontrate scambiarsi una chiave segreta senza che un intercettatore la veda? Questa sfida ha portato all'invenzione dei sistemi asimmetrici, che oggi vengono spesso usati insieme ai simmetrici in protocolli ibridi (es. TLS) per combinare sicurezza e velocità.",
+      ASYMMETRIC: "La **Crittografia Asimmetrica** (a chiave pubblica) ha risolto il problema secolare dello scambio delle chiavi introducendo il concetto di funzioni matematiche unidirezionali.\n\n### Funzioni Trapdoor\nSi basa su problemi matematici facili da calcolare in un senso, ma 'computazionalmente impossibili' da invertire senza una specifica informazione aggiuntiva (la chiave privata). I pilastri sono:\n• **Fattorizzazione Intera**: Difficoltà di trovare i fattori primi di un numero molto grande (RSA).\n• **Logaritmo Discreto**: Invertire l'elevamento a potenza in campi finiti (Diffie-Hellman).\n• **Logaritmo Discreto su Curve Ellittiche (ECDLP)**: Una variante molto più efficiente basata sulla geometria delle curve ellittiche.\n\n### Infrastruttura a Chiave Pubblica (PKI)\nL'uso di coppie di chiavi permette la creazione di **Firme Digitali**, garantendo che un messaggio non solo sia segreto, ma provenga indiscutibilmente dal mittente dichiarato. Questo è il fondamento legale della validità dei documenti digitali moderni.",
+      HASHING: "Le **Funzioni Hash Crittografiche** sono algoritmi unidirezionali che trasformano un input di qualsiasi dimensione in un 'digest' di lunghezza fissa.\n\n### Requisiti di un Hash 'Sicuro'\nPer essere crittograficamente utile, una funzione hash deve possedere tre proprietà critiche:\n1. **Resistenza alla Pre-immagine**: Dato un hash *h*, deve essere impossibile trovare un input *m* tale che *Hash(m) = h*.\n2. **Resistenza alla Seconda Pre-immagine**: Dato un input *m1*, deve essere impossibile trovarne un secondo *m2* tale che *Hash(m1) = Hash(m2)*.\n3. **Resistenza alle Collisioni**: Deve essere impossibile trovare *qualsiasi* coppia di input distinti che producano lo stesso hash.\n\n### Applicazioni\nSono onnipresenti: dal controllo dell'integrità dei file (checksum) alla memorizzazione sicura delle password (tramite salting e stretching), fino alla struttura dei blocchi nelle blockchain, dove ogni blocco contiene l'hash del precedente, creando una catena immutabile.",
+      MAC: "I **Message Authentication Codes (MAC)** sono algoritmi che utilizzano una chiave segreta per autenticare un messaggio e garantirne l'integrità.\n\n### Differenza dagli Hash\nMentre un hash standard è pubblico e chiunque può ricalcolarlo se il file viene modificato, un MAC richiede la conoscenza di una chiave segreta. Un attaccante che altera un messaggio non può rigenerare un MAC valido, poiché non possiede la chiave per farlo.\n\n### HMAC e CMAC\n• **HMAC (Hash-based MAC)**: Utilizza una funzione hash (come SHA-256) applicata due volte in modo specifico per evitare attacchi di estensione della lunghezza.\n• **CMAC (Cipher-based MAC)**: Utilizza un cifrario a blocchi (come AES) operando in modalità CBC. L'ultimo blocco cifrato serve come autenticatore per l'intero messaggio. È lo standard preferito in molti protocolli industriali e sistemi embedded dove l'hardware AES è già presente."
     },
     algorithms: {
       CAESAR: 'Cifrario di Cesare',
@@ -254,137 +254,163 @@ export const LABELS = {
     },
     algoDetails: {
         CAESAR: {
-            theory: "ANALISI STORICA E MATEMATICA:\nIl Cifrario di Cesare rappresenta uno dei primi esempi documentati di crittografia sistematica, utilizzato da Giulio Cesare per la comunicazione di dispacci militari riservati. Matematicamente, l'algoritmo opera nello spazio vettoriale dell'aritmetica modulare su un alfabeto di dimensione $n=26$.\n\nFORMULAZIONE:\nDefinito $x$ come la posizione del carattere in chiaro e $k$ come lo spostamento (chiave), la funzione di cifratura è definita come $E_k(x) = (x + k) \\pmod{26}$. La decifratura è simmetricamente definita come $D_k(y) = (y - k) \\pmod{26}$.\n\nDEBOLEZZE CRITTANALITICHE:\n1. **Spazio delle chiavi limitato**: Esistono solo 25 chiavi significative. Un attacco a forza bruta manuale richiede pochi secondi.\n2. **Preservazione delle frequenze**: L'algoritmo non distrugge le proprietà statistiche della lingua. Se nel testo originale la 'E' è la più frequente, la lettera mappata da $E+k$ sarà la più frequente nel testo cifrato. Ciò rende il sistema vulnerabile all'analisi delle frequenze monoalfabetica.",
-            guide: "1. Inserire il testo da cifrare.\n2. Selezionare lo slider per definire lo spostamento $k$.\n3. Osservare la rotazione dell'alfabeto nella console."
+            theory: "### Analisi Storica e Matematica\nIl **Cifrario di Cesare** è uno dei più antichi algoritmi crittografici conosciuti, risalente all'epoca imperiale romana. Giulio Cesare lo utilizzava per proteggere messaggi di rilevanza militare durante le sue campagne.\n\n### Definizione Formale\nMatematicamente, il sistema opera nell'anello $\\mathbb{Z}_{26}$. Data una lettera $x$ e una chiave $k$, la cifratura è definita dalla congruenza lineare:\n$$E_k(x) = (x + k) \\pmod{26}$$\nLa decifratura è l'operazione inversa:\n$$D_k(y) = (y - k) \\pmod{26}$$\n\n### Vulnerabilità Crittanalitica\nIl sistema soffre di due debolezze fatali:\n1. **Spazio delle Chiavi Ridotto**: Con sole 25 chiavi possibili (escludendo lo spostamento nullo), un attacco a forza bruta è istantaneo anche senza computer.\n2. **Preservazione della Frequenza**: Essendo una sostituzione monoalfabetica, non altera la distribuzione statistica dell'alfabeto originale. Se in Italiano la lettera più frequente è la 'E', nel testo cifrato la lettera che la sostituisce sarà parimenti la più frequente. Questo lo rende vulnerabile all'analisi dei monogrammi.",
+            guide: "1. Inserisci il testo in chiaro nel campo di input.\n2. Utilizza lo slider per selezionare il valore dello spostamento (da 1 a 25).\n3. Il testo processato apparirà istantaneamente nel riquadro dell'output."
         },
         VIGENERE: {
-            theory: "ANALISI TECNICA:\nProposto inizialmente da Giovan Battista Bellaso nel 1553 e successivamente raffinato da Blaise de Vigenère, questo algoritmo è stato considerato 'le chiffre indéchiffrable' per oltre tre secoli. Si tratta di un cifrario a sostituzione polialfabetica.\n\nMECCANISMO:\nA differenza di Cesare, Vigenère utilizza una parola chiave che determina una serie di spostamenti variabili. Ogni lettera del testo in chiaro viene traslata secondo il valore della lettera corrispondente nella chiave, ripetuta ciclicamente: $C_i = (P_i + K_{i \\pmod L}) \\pmod{26}$, dove $L$ è la lunghezza della chiave.\n\nCRITTANALISI:\nLa vulnerabilità principale risiede nella periodicità della chiave. Se la chiave è lunga $L$, ogni $L$-esima lettera è cifrata con lo stesso alfabeto di Cesare. Friedrich Kasiski (1863) dimostrò che cercando sequenze ripetute nel testo cifrato è possibile dedurre la lunghezza $L$ della chiave. Una volta nota $L$, il problema si riduce a risolvere $L$ sistemi di Cesare indipendenti tramite analisi delle frequenze.",
-            guide: "1. Scegliere una parola chiave complessa.\n2. Modalità Autokey: in questo schema avanzato, la chiave non si ripete ma viene estesa dal testo in chiaro stesso, eliminando la periodicità ciclica."
+            theory: "### Il Cifrario 'Indecifrabile'\nPresentato da Giovan Battista Bellaso e perfezionato da Blaise de Vigenère nel XVI secolo, questo metodo è rimasto inviolato per oltre tre secoli. È un esempio classico di **crittografia polialfabetica**.\n\n### Meccanismo di Funzionamento\nA differenza di Cesare, Vigenère utilizza una parola chiave che determina una serie di spostamenti variabili. Ogni lettera del messaggio viene traslata secondo la lettera corrispondente della chiave, ripetuta ciclicamente:\n$$C_i = (P_i + K_{i \\pmod L}) \\pmod{26}$$\ndove $L$ è la lunghezza della chiave.\n\n### Modalità Autokey\nNella variante **Autokey**, la chiave non si ripete. Inizia con una parola segreta, ma prosegue utilizzando il testo in chiaro stesso come chiave. Questo elimina la periodicità del keystream, rendendo l'analisi di Kasiski inefficace.\n\n### Crittanalisi Moderna\nNel 1863, Friedrich Kasiski pubblicò un metodo per determinare la lunghezza della chiave analizzando le ripetizioni nel ciphertext. Una volta trovata la lunghezza $L$, il sistema si riduce a $L$ cifrari di Cesare indipendenti, risolvibili tramite analisi statistica.",
+            guide: "1. Digita il messaggio.\n2. Inserisci una parola chiave segreta.\n3. Seleziona tra modalità 'Standard' (Ripetitiva) o 'Autokey' per una sicurezza superiore."
         },
         PLAYFAIR: {
-            theory: "STORIA E STRUTTURA:\nSviluppato da Charles Wheatstone nel 1854, il Cifrario Playfair è stato il primo sistema crittografico digrafico ad ampia diffusione. Opera su coppie di lettere invece che su singoli caratteri, aumentando drasticamente la resistenza all'analisi delle frequenze classica.\n\nREGOLE DI TRASFORMAZIONE:\nL'algoritmo utilizza una matrice 5x5 popolata da una chiave segreta (solitamente fondendo J con I). Il testo viene diviso in bigrammi. Esistono tre casi:\n1. **Stessa riga**: Ogni lettera è sostituita dalla successiva a destra.\n2. **Stessa colonna**: Ogni lettera è sostituita dalla successiva in basso.\n3. **Rettangolo**: Ogni lettera è sostituita da quella nella stessa riga ma all'angolo opposto del rettangolo formato dalla coppia.\n\nVALUTAZIONE SICUREZZA:\nPoiché esistono $26^2 = 676$ bigrammi (contro i 26 monogrammi), l'analisi statistica richiede molto più materiale intercettato. Tuttavia, è ancora vulnerabile alla crittanalisi dei bigrammi su testi lunghi.",
-            guide: "Il sistema gestisce automaticamente la sostituzione della 'J' con la 'I' e l'inserimento di caratteri di riempimento ('X') in caso di lettere doppie o lunghezza dispari."
+            theory: "### Crittografia Digrafica\nSviluppato da Charles Wheatstone nel 1854, il **Cifrario Playfair** è stato il primo sistema a cifrare coppie di lettere (bigrammi) invece di singoli caratteri. Fu ampiamente utilizzato dall'Impero Britannico durante la Prima Guerra Mondiale.\n\n### Struttura della Matrice\nL'algoritmo crea una matrice 5x5 popolata da una parola chiave (omettendo le lettere duplicate e fondendo solitamente 'J' con 'I').\n\n### Regole di Trasformazione\nPer ogni coppia di lettere:\n• **Stessa Riga**: Sposta ogni lettera a destra.\n• **Stessa Colonna**: Sposta ogni lettera in basso.\n• **Rettangolo**: Sostituisci ogni lettera con quella situata nello stesso rigo ma nella colonna dell'altra lettera.\n\n### Sicurezza\nCifrando digrammi, l'algoritmo eleva lo spazio dei simboli da 26 a $26^2 = 676$. Questo appiattisce significativamente l'analisi delle frequenze, rendendo necessari testi molto più lunghi per una crittanalisi statistica efficace.",
+            guide: "1. Inserisci una chiave alfanumerica.\n2. Osserva la generazione dinamica della matrice 5x5.\n3. Inserisci il testo: il sistema gestirà automaticamente i caratteri di riempimento ('X') e la normalizzazione 'J' -> 'I'."
         },
         MONOALPHABETIC: {
-            theory: "ANALISI COMBINATORIA:\nLa sostituzione monoalfabetica generale mappa ogni lettera dell'alfabeto sorgente in un'altra lettera secondo una permutazione casuale dell'alfabeto stesso.\n\nSPAZIO DELLE CHIAVI:\nLo spazio delle chiavi è vastissimo, pari a $26! \\approx 4.03 \\times 10^{26}$. Questo numero è sufficientemente grande da impedire qualsiasi attacco di forza bruta esaustiva anche con supercomputer moderni.\n\nCRITTANALISI:\nNonostante l'immenso spazio delle chiavi, il sistema è fondamentalmente insicuro. Poiché ogni carattere ha una mappatura univoca, non avviene alcuna 'diffusione' dell'informazione. Un analista può ricostruire la chiave in pochi minuti analizzando la frequenza delle lettere (es. identificando la 'E', la 'T', gli articoli, etc.) e applicando tecniche di riconoscimento di pattern linguistici.",
-            guide: "Inserire una stringa chiave: il sistema genererà una permutazione dell'alfabeto basata sui caratteri unici della chiave seguiti dalle lettere rimanenti."
+            theory: "### Sostituzione Generale\nA differenza di Cesare, che applica solo rotazioni, la **Sostituzione Monoalfabetica** permette a ogni lettera dell'alfabeto di essere mappata in una qualsiasi delle 26 lettere possibili, a condizione che la mappatura sia biunivoca.\n\n### Analisi Combinatoria\nLo spazio delle chiavi è vastissimo, pari a $26!$ (circa $4.03 \\times 10^{26}$). Anche provando un miliardo di chiavi al secondo, la vita dell'universo non basterebbe per un attacco a forza bruta.\n\n### Fragilità Statistica\nNonostante l'enorme spazio delle chiavi, il sistema è estremamente debole. Poiché la relazione tra carattere originale e cifrato è fissa, l'attaccante può ricostruire l'intero alfabeto analizzando la frequenza delle lettere, dei digrammi (es. 'QU', 'CH') e dei trigrammi, oltre ai pattern delle parole brevi (articoli e preposizioni).",
+            guide: "1. Inserisci una stringa chiave casuale.\n2. Visualizza la tabella di mappatura generata (Alphabet Mapping).\n3. Digita il testo per vedere la sostituzione in tempo reale."
         },
         AES: {
-            theory: "STANDARD INDUSTRIALE E ARCHITETTURA:\nL'Advanced Encryption Standard (AES) è un cifrario a blocchi iterativo selezionato dal NIST nel 2001. A differenza del DES, non utilizza una rete di Feistel ma una rete di Sostituzione-Permutazione (SPN) operante su un campo finito di Galois $GF(2^8)$.\n\nPROCESSO DI CIFRATURA (ROUND):\nOgni round (10, 12 o 14 a seconda della chiave) consiste in quattro trasformazioni:\n1. **SubBytes**: Sostituzione non lineare basata su S-Box (confusione).\n2. **ShiftRows**: Trasposizione ciclica delle righe dello stato.\n3. **MixColumns**: Trasformazione lineare delle colonne tramite moltiplicazione polinomiale (diffusione).\n4. **AddRoundKey**: Operazione di XOR con la sottochiave derivata.\n\nMODALITÀ OPERATIVE:\n• **GCM**: Fornisce cifratura autenticata (AEAD), garantendo che il testo non sia manipolato.\n• **CBC**: Concatenazione dei blocchi; richiede un Vettore di Inizializzazione (IV) unico.",
-            guide: "Selezionare AES-256 per la massima sicurezza. La modalità GCM è lo standard attuale per le comunicazioni web (TLS)."
+            theory: "### Lo Standard Mondiale\nL'**Advanced Encryption Standard (AES)** è un cifrario a blocchi iterativo selezionato dal NIST nel 2001 dopo un concorso internazionale. È considerato inviolabile dai computer attuali e resiste a gran parte degli attacchi crittanalitici noti.\n\n### Architettura a Round\nAES opera su una matrice 4x4 di byte chiamata 'Stato'. A seconda della chiave (128, 192, 256 bit), l'algoritmo esegue 10, 12 o 14 round. Ogni round consiste in:\n1. **SubBytes**: Sostituzione non lineare tramite S-Box (Confusione).\n2. **ShiftRows**: Trasposizione ciclica delle righe dello stato.\n3. **MixColumns**: Moltiplicazione polinomiale in $GF(2^8)$ (Diffusione).\n4. **AddRoundKey**: XOR con la sottochiave del round.\n\n### Modalità Operative\n• **GCM (Galois/Counter Mode)**: La più sicura; fornisce sia confidenzialità che autenticità dei dati.\n• **CBC (Cipher Block Chaining)**: Ogni blocco dipende dal precedente; richiede un IV (Vettore di Inizializzazione) casuale.\n• **ECB (Electronic Codebook)**: Insicura; blocchi identici producono ciphertext identici, rivelando pattern visibili.",
+            guide: "1. Scegli la lunghezza della chiave (256-bit è consigliato).\n2. Seleziona la modalità GCM per applicazioni moderne.\n3. Inserisci una password robusta: il sistema utilizzerà PBKDF2 per derivare la chiave crittografica."
         },
         DES: {
-            theory: "ANALISI STORICA:\nIl Data Encryption Standard (DES) è stato lo standard mondiale dagli anni '70 agli anni '90. Basato sulla rete di Feistel, opera su blocchi di 64 bit con una chiave di 56 bit (più 8 bit di parità).\n\nVULNERABILITÀ STRUTTURALE:\nIl problema principale del DES è la lunghezza della chiave. Con soli 56 bit, esistono $2^{56} \\approx 7.2 \\times 10^{16}$ combinazioni. Già nel 1998, la EFF dimostrò la possibilità di violare il DES in meno di 3 giorni utilizzando un hardware specializzato ('Deep Crack'). Oggi, il DES è considerato totalmente insicuro e utilizzabile solo per scopi didattici o compatibilità legacy.",
-            guide: "Algoritmo deprecato. Utilizzare solo per comprendere il funzionamento delle Reti di Feistel e delle S-Box storiche."
+            theory: "### La Genesi della Crittografia Digitale\nSviluppato da IBM negli anni '70, il **Data Encryption Standard (DES)** è stato il primo algoritmo crittografico approvato per l'uso governativo civile. Si basa sulla **Rete di Feistel**, una struttura che divide il blocco di dati in due metà ed esegue funzioni di permutazione e sostituzione.\n\n### Il Declino della Sicurezza\nIl limite fatale del DES è la lunghezza della chiave: solo **56 bit**. Già negli anni '90, la potenza di calcolo ha reso possibile l'interrogazione dell'intero spazio delle chiavi ($2^{56}$) in tempi brevi. Nel 1998, il 'DES Cracker' della EFF lo violò in meno di tre giorni. Oggi è considerato obsoleto e insicuro per qualsiasi protezione di dati reali.",
+            guide: "Questo modulo è a scopo puramente didattico. Sperimenta con le chiavi a 56 bit e osserva come blocchi piccoli (64-bit) siano vulnerabili agli attacchi moderni."
         },
         TRIPLE_DES: {
-            theory: "EVOLUZIONE E SICUREZZA:\nIl Triple DES (3DES) è stato introdotto per estendere la vita utile del DES originale senza riscrivere completamente gli standard. Consiste nell'applicazione dell'algoritmo DES tre volte con chiavi differenti (schema EDE: Encrypt-Decrypt-Encrypt).\n\nCONFIGURAZIONI:\n• **3-Key (Option 1)**: Tre chiavi diverse, sicurezza effettiva di circa 112-168 bit.\n• **2-Key (Option 2)**: $K1 = K3$, vulnerabile ad attacchi di 'meet-in-the-middle'.\n\nSTATO ATTUALE:\nSebbene sia più sicuro del DES, è estremamente lento in quanto deve processare ogni blocco tre volte. Il NIST ha ufficialmente ritirato lo standard nel 2023 per tutte le nuove applicazioni a causa della vulnerabilità 'Sweet32' (collisioni su blocchi da 64 bit).",
-            guide: "Sostituire sistematicamente con AES ove possibile. In questa suite è simulato per dimostrare la persistenza dei sistemi legacy."
+            theory: "### Estensione della Vita Utile\nIl **Triple DES (3DES)** è stato introdotto come rimedio temporaneo alla debolezza del DES. Invece di progettare un nuovo algoritmo, si applica il DES tre volte consecutive.\n\n### Lo Schema EDE\nIl processo segue solitamente la sequenza EDE (Encrypt-Decrypt-Encrypt) con tre chiavi distinte (K1, K2, K3):\n$$C = E_{K3}(D_{K2}(E_{K1}(P)))$$\nL'uso del 'Decrypt' nel mezzo permette la compatibilità con il DES standard se K1=K2=K3.\n\n### Stato Attuale\nSebbene offra uno spazio di chiavi fino a 168 bit, la sicurezza effettiva è di circa 112 bit a causa di attacchi 'meet-in-the-middle'. A causa della sua lentezza e della vulnerabilità 'Sweet32', il NIST ne ha dichiarato il ritiro definitivo entro il 2023.",
+            guide: "Utilizza le opzioni a 2 chiavi (112-bit) o 3 chiavi (168-bit). Nota l'incremento del carico computazionale rispetto al DES singolo."
         },
         RC4: {
-            theory: "ANALISI DELLO STREAM CIPHER:\nRC4 è il cifrario a flusso più utilizzato nella storia (WEP, TLS/SSL). Progettato da Ron Rivest, si basa sulla generazione di un keystream pseudo-casuale derivato da una permutazione di 256 byte.\n\nVULNERABILITÀ E DECLINO:\nNonostante la sua velocità, RC4 è affetto da gravi bias statistici. I primi byte del flusso di output non sono perfettamente uniformi, il che permette a un attaccante che osserva molti messaggi cifrati con la stessa chiave di recuperare il plaintext. È stato ufficialmente proibito in tutti i protocolli TLS nel 2015 (RFC 7465).",
-            guide: "Inserire la chiave. L'output mostrato è in formato esadecimale per permettere la visualizzazione di caratteri non stampabili tipici dei cifrari a flusso."
+            theory: "### Semplicità ed Efficienza\nRC4 è il cifrario a flusso più utilizzato al mondo, celebre per la sua estrema semplicità (può essere memorizzato in pochi righe di codice). Progettato da Ron Rivest per RSA Security nel 1987.\n\n### Meccanismo Interno\nSi basa su un array di 256 byte (S-Box) che viene rimescolato continuamente. Genera un flusso di byte pseudo-casuali che vengono combinati tramite XOR con il messaggio.\n\n### Bias Statistici e Caduta\nNonostante la velocità, RC4 è affetto da gravi debolezze statistiche. I primi byte del keystream non sono perfettamente casuali. Attacchi come 'Royal Flush' permettono di recuperare informazioni analizzando molti messaggi cifrati. Dal 2015, il suo uso è proibito nei protocolli TLS (RFC 7465).",
+            guide: "Inserisci una chiave e osserva l'output in formato esadecimale. Ricorda che lo XOR è simmetrico: cifrare due volte con la stessa chiave restituisce il testo originale."
         },
         CHACHA20: {
-            theory: "STATO DELL'ARTE:\nChaCha20 è un cifrario a flusso moderno progettato da Daniel J. Bernstein come evoluzione di Salsa20. È ottimizzato per le prestazioni software su processori general-purpose, superando AES in assenza di accelerazione hardware specifica (AES-NI).\n\nCARATTERISTICHE:\nUtilizza operazioni ARX (Add-Rotate-Xor) a 32 bit disposte in una matrice 4x4. Accoppiato con Poly1305 (un MAC ad alte prestazioni), forma lo standard AEAD preferito da Google e Cloudflare per le connessioni mobili e TLS 1.3.\n\nSICUREZZA:\nAttualmente non sono noti attacchi pratici contro ChaCha20 con 20 round. Offre un'eccellente resistenza alla crittanalisi lineare e differenziale.",
-            guide: "Ideale per streaming dati e applicazioni moderne. Combina velocità estrema e massima sicurezza crittografica."
+            theory: "### L'Erede Moderno degli Stream Cipher\nProgettato da Daniel J. Bernstein, **ChaCha20** è l'evoluzione di Salsa20. È diventato lo standard *de facto* per le connessioni mobili e TLS 1.3 grazie alla sua straordinaria velocità su hardware che non dispone di istruzioni AES dedicate.\n\n### Architettura ARX\nUtilizza esclusivamente operazioni di addizione, rotazione e XOR (ARX). Questo lo rende immune agli attacchi di 'timing' che affliggono le implementazioni software di AES basate su tabelle di ricerca (lookup tables).\n\n### Sicurezza e Prestazioni\nAccoppiato con Poly1305 (un autenticatore), forma una suite AEAD (Authenticated Encryption with Associated Data). È utilizzato da Google, Cloudflare e nel protocollo WireGuard per la sua robustezza e facilità di implementazione sicura.",
+            guide: "Ideale per streaming dati. Inserisci il testo e una chiave; il sistema genererà un IV (Vettore di Inizializzazione) unico per garantire che ogni cifratura sia diversa anche per lo stesso messaggio."
         },
         RSA: {
-            theory: "FONDAMENTI DELLA CHIAVE PUBBLICA:\nRSA (1977) basa la sua sicurezza sulla difficoltà computazionale della **fattorizzazione di grandi numeri interi**. È un algoritmo asimmetrico: utilizza una chiave pubblica per cifrare e una privata per decifrare.\n\nMATEMATICA:\nSiano $p, q$ due numeri primi segreti molto grandi. Il modulo $n = p \\times q$ è reso pubblico. La sicurezza risiede nel fatto che, conoscendo solo $n$, trovare $p$ e $q$ richiede tempi esponenziali con gli algoritmi correnti (come il General Number Field Sieve).\n\nESSE E DE:\nSi sceglie un esponente pubblico $e$ e si calcola $d$ (l'inverso moltiplicativo di $e$ modulo $\\phi(n)$). La cifratura è $c = m^e \\pmod n$. La decifratura è $m = c^d \\pmod n$.",
-            guide: "La generazione delle chiavi a 2048 bit può richiedere tempo. In produzione, usare sempre il padding OAEP per prevenire attacchi sui testi scelti."
+            theory: "### Il Pilastro della Chiave Pubblica\nRSA (1977) è il primo algoritmo asimmetrico ad aver trovato applicazione pratica su larga scala. La sua sicurezza si fonda sulla difficoltà del **problema della fattorizzazione intera**.\n\n### Matematica del Sistema\nSiano $p$ e $q$ due numeri primi grandi. Il modulo $n = p \\times q$ è pubblico. La chiave pubblica $e$ è scelta tale da essere coprima con $\\phi(n)$. La chiave privata $d$ è l'inverso moltiplicativo di $e$ modulo $\\phi(n)$.\nCifratura: $C = M^e \\pmod n$\nDecifratura: $M = C^d \\pmod n$\n\n### Parametri di Sicurezza\nOggi, chiavi inferiori a 2048 bit sono considerate insicure per il lungo termine. RSA è molto più lento della crittografia simmetrica e viene solitamente usato per scambiare una chiave AES, non per cifrare grandi moli di dati.",
+            guide: "1. Seleziona la lunghezza della chiave (2048 o 4096 bit).\n2. Premi 'Generate' per creare la coppia di chiavi PEM.\n3. Copia la chiave pubblica al destinatario per permettergli di cifrare i messaggi rivolti a te."
         },
         DIFFIE_HELLMAN: {
-            theory: "RIVOLUZIONE DELLO SCAMBIO CHIAVI:\nIl protocollo DH non è un algoritmo di cifratura, ma un metodo per stabilire un segreto condiviso su un canale insicuro. Si basa sulla difficoltà del **Problema del Logaritmo Discreto**.\n\nIL PROCESSO:\nAlice e Bob concordano un numero primo $p$ e un generatore $g$. Alice sceglie un segreto $a$ e invia $A = g^a \\pmod p$. Bob sceglie $b$ e invia $B = g^b \\pmod p$. Entrambi possono ora calcolare $S = B^a \\pmod p = A^b \\pmod p = g^{ab} \\pmod p$. Un intercettatore (Eve) vede $g, p, A, B$ ma non può ricavare $g^{ab}$ in tempi ragionevoli.",
-            guide: "Simulazione interattiva: generare le chiavi per Alice e Bob, scambiarle premendo 'SEND KEY' e calcolare il segreto comune."
+            theory: "### La Rivoluzione dello Scambio Chiavi\nIl protocollo DH (1976) ha permesso per la prima volta a due parti di stabilire un segreto comune su un canale intercettato da terzi, senza aver mai scambiato informazioni segrete in precedenza.\n\n### Logaritmo Discreto\nSi basa sulla difficoltà di calcolare il logaritmo discreto. Alice e Bob concordano un primo $p$ e un generatore $g$. Ognuno sceglie un segreto privato ($a$ e $b$) e calcola la propria componente pubblica ($g^a \\pmod p$ e $g^b \\pmod p$). Scambiandosi questi valori, entrambi arrivano allo stesso segreto finale $g^{ab} \\pmod p$.\n\n### Protezione Man-in-the-Middle\nDH non fornisce autenticazione. Senza certificati digitali, un attaccante potrebbe interporsi tra Alice e Bob, spacciandosi per l'uno con l'altro e stabilendo due segreti distinti.",
+            guide: "Simulazione interattiva: 1. Alice e Bob generano chiavi private. 2. Si scambiano le chiavi pubbliche. 3. Entrambi calcolano il segreto condiviso, che sarà identico per entrambi."
         },
         ECC: {
-            theory: "EFFICIENZA E CURVE ELLITTICHE:\nLa crittografia a curve ellittiche (ECC) offre lo stesso livello di sicurezza di RSA ma con chiavi drasticamente più brevi. Una chiave ECC a 256 bit è equivalente a una RSA a 3072 bit.\n\nMATEMATICA DEI GRUPPI:\nSi basa sulla struttura algebrica delle curve ellittiche su campi finiti. L'operazione fondamentale è la somma di punti sulla curva. Moltiplicare un punto $P$ per uno scalare $k$ ($Q = kP$) è facile, ma dato $P$ e $Q$, trovare $k$ è estremamente difficile (ECDLP).\n\nAPPLICAZIONI:\nUtilizzata ovunque oggi: Bitcoin (curva secp256k1), WhatsApp, TLS 1.3, firme digitali governative.",
-            guide: "In questo modulo viene simulato lo scambio ECDH (Elliptic Curve Diffie-Hellman) per generare un segreto condiviso."
+            theory: "### Crittografia a Curve Ellittiche\nECC rappresenta lo stato dell'arte della crittografia asimmetrica. Offre un livello di sicurezza equivalente a RSA ma con chiavi molto più corte (es. ECC 256 bit $\\approx$ RSA 3072 bit).\n\n### Geometria Algebrica\nInvece di lavorare con numeri interi e potenze, ECC lavora con punti su una curva definita dall'equazione $y^2 = x^3 + ax + b$. L'operazione di base è la 'moltiplicazione scalare' di un punto. Trovare quante volte un punto $P$ è stato sommato a se stesso per ottenere $Q$ è un problema intrattabile (ECDLP).\n\n### Vantaggi Pratici\nGrazie alle chiavi ridotte, ECC richiede meno memoria, meno energia e meno banda, rendendolo ideale per smartphone, dispositivi IoT e smart card.",
+            guide: "Seleziona una curva standard (es. P-256 del NIST). Genera le chiavi e calcola il segreto condiviso. Nota come la rappresentazione della chiave sia più compatta rispetto a RSA."
         },
-        MD5: { theory: "ANALISI DELLA COMPROMISSIONE:\nMD5 produce un digest a 128 bit. Sviluppato nel 1991, è oggi considerato **criptograficamente rotto**. Sono stati dimostrati attacchi di collisione in pochi secondi, permettendo la creazione di file diversi con lo stesso hash. Utilizzabile solo per checksum non critici.", guide: "Non utilizzare mai MD5 per password o firme digitali." },
-        SHA1: { theory: "FINE VITA:\nSHA-1 produce un digest a 160 bit. Dal 2017 (attacco SHAttered di Google), le collisioni sono praticabili. È stato rimosso dal supporto dei browser e delle autorità di certificazione. Sostituire con SHA-256.", guide: "Algoritmo storico, mostrato per confrontare la lunghezza del digest rispetto a MD5." },
-        SHA256: { theory: "LO STANDARD ATTUALE:\nParte della famiglia SHA-2 (NIST), produce un digest a 256 bit. È ampiamente utilizzato nel protocollo TLS, nelle transazioni Bitcoin e nei sistemi di autenticazione moderni. Resistente alle collisioni note e agli attacchi di pre-immagine.", guide: "Standard industriale consigliato per la maggior parte delle applicazioni." },
-        SHA512: { theory: "SICUREZZA ESTREMA:\nVariante a 512 bit di SHA-2. Ottimizzata per architetture a 64 bit, è più veloce di SHA-256 su molti server moderni. Offre un margine di sicurezza superiore contro i futuri progressi computazionali.", guide: "Utilizzato per la protezione di dati ad altissima sensibilità." },
-        SHA3: { theory: "INNOVAZIONE SPONGE:\nSHA-3 (Keccak) non è basato sulla struttura Merkle-Damgård (come SHA-2), ma su una costruzione a **Sponge**. Questo lo rende immune a classi di attacchi che colpiscono SHA-2 e fornisce una diversità algoritmica fondamentale in caso di rottura di SHA-2.", guide: "Flessibile e potente, rappresenta il futuro degli standard di hashing." },
-        BLAKE2: { theory: "VELOCITÀ E SICUREZZA:\nBLAKE2 è un'evoluzione dei finalisti SHA-3, ottimizzata per essere più veloce di MD5 pur mantenendo la sicurezza di SHA-3. È utilizzato in protocolli ad alte prestazioni come WireGuard.", guide: "Ideale per sistemi embedded e applicazioni dove la velocità è critica." },
-        BLAKE3: { theory: "PARALLELISMO MASSIMO:\nBLAKE3 è l'hash più veloce disponibile. Grazie a una struttura a albero Merkle interna, può essere parallelizzato su tutti i core della CPU e utilizzare istruzioni SIMD, processando GB di dati al secondo.", guide: "Il nuovo benchmark per le prestazioni di hashing." },
-        HMAC: { theory: "AUTENTICAZIONE SICURA:\nHMAC combina una funzione di hash con una chiave segreta. Previene attacchi di manipolazione del digest che sarebbero possibili se si concatenasse semplicemente la chiave al messaggio.", guide: "Inserire sia il messaggio che la chiave segreta per generare l'autenticatore." },
-        CMAC: { theory: "AUTENTICAZIONE BASATA SU CIFRARI:\nUtilizza un cifrario a blocchi (AES) invece di un hash. È preferito in sistemi che hanno già hardware dedicato per AES (come smart card) per evitare di includere librerie hash aggiuntive.", guide: "Selezionare la lunghezza della chiave AES per determinare la robustezza del MAC." }
+        MD5: { 
+            theory: "### Un Gigante Caduto\nMD5 genera un digest a 128 bit. Sviluppato nel 1991, è stato per decenni lo standard per verificare l'integrità dei dati.\n\n### Stato della Sicurezza\nOggi MD5 è considerato **criptograficamente rotto**. Sono stati scoperti algoritmi in grado di generare collisioni (due file diversi con lo stesso hash) in pochi secondi su un normale PC. Non deve mai essere usato per firme digitali, password o qualsiasi applicazione di sicurezza.", 
+            guide: "Utilizzalo solo per checksum di file non critici dove la velocità è l'unico requisito." 
+        },
+        SHA1: { 
+            theory: "### Obsoleto e Pericoloso\nSHA-1 produce un digest a 160 bit. Pur essendo più robusto di MD5, è stato vittima di attacchi di collisione pratici (SHAttered, 2017).\n\n### Abbandono Globale\nLe autorità di certificazione hanno smesso di emettere certificati SHA-1 anni fa. Ogni sistema moderno deve migrare verso la famiglia SHA-2 o SHA-3 per garantire l'integrità dei dati a lungo termine.", 
+            guide: "Algoritmo mostrato per scopi storici e comparativi. Osserva la lunghezza dell'hash rispetto a MD5 e SHA-256." 
+        },
+        SHA256: { 
+            theory: "### Lo Standard di Integrità\nParte della famiglia SHA-2 progettata dalla NSA, produce un digest a 256 bit. È l'algoritmo di hash più utilizzato al mondo.\n\n### Applicazioni Critiche\nÈ la base della sicurezza di internet (TLS), dell'autenticazione software e del protocollo Bitcoin. Attualmente non sono noti attacchi pratici in grado di generare collisioni. Offre un equilibrio perfetto tra prestazioni e sicurezza impenetrabile.", 
+            guide: "Standard consigliato per hashing di file, verifica di download e storage di password (con salt)." 
+        },
+        SHA512: { 
+            theory: "### Potenza a 64-bit\nVariante a 512 bit di SHA-2. È ottimizzata per processori a 64 bit, dove può risultare addirittura più veloce di SHA-256 pur offrendo un margine di sicurezza doppio.\n\n### Resistenza Futura\nCon un digest così ampio, SHA-512 offre una protezione estrema contro attacchi di forza bruta e potenziali futuri algoritmi quantistici di ricerca collisioni (Algoritmo di Grover).", 
+            guide: "Utilizzalo per dati ad altissima sensibilità o quando lavori su sistemi server ad alte prestazioni." 
+        },
+        SHA3: { 
+            theory: "### L'Algoritmo Sponge\nSHA-3 (Keccak) è il vincitore del concorso NIST terminato nel 2012. A differenza di SHA-2, non usa la struttura Merkle-Damgård ma una costruzione a **Sponge**.\n\n### Diversità Crittografica\nEssendo strutturalmente diverso dai suoi predecessori, SHA-3 garantisce che, se venisse scoperta una vulnerabilità fondamentale in SHA-2, il mondo avrebbe un'alternativa sicura e testata pronta all'uso.", 
+            guide: "Sperimenta con le diverse lunghezze del digest (224, 256, 384, 512 bit). SHA-3 è considerato il futuro della standardizzazione hash." 
+        },
+        BLAKE2: { 
+            theory: "### Più Veloce di MD5, Più Sicuro di SHA-3\nBLAKE2b è un'evoluzione del finalista SHA-3 BLAKE. È progettato per essere estremamente veloce in software, superando quasi ogni altro algoritmo su processori moderni.\n\n### Caratteristiche\nInclude funzionalità native per l'hashing personalizzato, l'hashing ad albero e l'uso di chiavi, rendendolo estremamente versatile per gli sviluppatori.", 
+            guide: "Ideale per checksum di grandi dataset in tempi record senza sacrificare la sicurezza crittografica." 
+        },
+        BLAKE3: { 
+            theory: "### Parallelismo Estremo\nBLAKE3 è l'ultimo nato nella famiglia BLAKE (2020). Utilizza una struttura interna ad albero Merkle che permette di parallelizzare il calcolo dell'hash su tutti i core della CPU e su istruzioni vettoriali (SIMD).\n\n### Prestazioni Ineguagliate\nPuò essere fino a 10-15 volte più veloce di SHA-256. È la scelta perfetta per sistemi che devono processare gigabyte di dati al secondo garantendo l'immutabilità.", 
+            guide: "Confronta la velocità di generazione dell'hash su testi lunghi rispetto a SHA-512." 
+        },
+        HMAC: { 
+            theory: "### Autenticazione Robusta\nHMAC (Keyed-Hash Message Authentication Code) non è una funzione hash, ma un meccanismo che le utilizza insieme a una chiave segreta.\n\n### Perché non basta un Hash?\nSe concatenassimo semplicemente Chiave+Messaggio e ne facessimo l'hash, il sistema sarebbe vulnerabile ad attacchi di 'Length Extension'. HMAC risolve questo problema eseguendo due passaggi di hashing con pad interni ed esterni specifici, garantendo che nessuno possa alterare il messaggio senza conoscere la chiave.", 
+            guide: "Inserisci sia il messaggio che la chiave segreta. L'output è un autenticatore che prova che il messaggio è integro e proviene da una fonte fidata." 
+        },
+        CMAC: { 
+            theory: "### Autenticazione tramite Cifrario\nCMAC utilizza un cifrario a blocchi (AES) per generare un codice di autenticazione. È ampiamente utilizzato negli standard bancari e nei protocolli di comunicazione industriale.\n\n### Efficienza Hardware\nIn molti dispositivi embedded, è disponibile un'accelerazione hardware per AES ma non per le funzioni hash. CMAC permette di ottenere un'autenticazione forte riutilizzando lo stesso motore crittografico della cifratura, risparmiando spazio e memoria.", 
+            guide: "Seleziona la lunghezza della chiave AES (128 o 256 bit). Il MAC risultante è derivato dall'ultimo blocco cifrato della catena CBC." 
+        }
     }
   },
   en: {
-    // ... (English labels would follow a similar pattern, omitted for brevity as per your focus on Italian expansion)
     title: 'CryptoFlow',
-    subtitle: 'Research Hub for Cryptographic Sciences',
-    inputPlaceholder: 'Type input text here...',
-    outputPlaceholder: 'Output will appear here...',
+    subtitle: 'Advanced Scientific Cryptography Hub',
+    inputPlaceholder: 'Type input text or ciphertext...',
+    outputPlaceholder: 'Waiting for computational output...',
     cipherInput: 'Plaintext',
-    cipherOutput: 'Output',
+    cipherOutput: 'Processed Result',
     decipherInput: 'Ciphertext',
-    decipherOutput: 'Decrypted Text',
-    key: 'Key / Password',
-    shift: 'Shift',
+    decipherOutput: 'Recovered Plaintext',
+    key: 'Encryption Key',
+    shift: 'Modular Shift',
     encrypt: 'Encryption Module',
     decrypt: 'Decryption Module',
-    copy: 'Copy',
-    clear: 'Clear',
-    transfer: 'Use to Decrypt',
+    copy: 'Copy to Clipboard',
+    clear: 'Reset Fields',
+    transfer: 'Send to Decryptor',
     console: 'System Console',
-    consolePlaceholder: 'Waiting for operations...',
-    sidebarTitle: 'Algorithms',
+    consolePlaceholder: 'No activity detected...',
+    sidebarTitle: 'Algorithm Taxonomy',
     tooltips: {
-        catClassical: 'Historical substitution algorithms',
-        catSymmetric: 'Single key for encryption and decryption',
-        catAsymmetric: 'Key pair (Public/Private)',
-        catHashing: 'Irreversible digital fingerprints',
-        catMac: 'Message authentication with key',
-        clearInput: 'Clear all text',
-        copyOutput: 'Copy to clipboard',
-        transfer: 'Move output to decryption module',
-        randomize: 'Generate random value',
-        newParams: 'Generate new group parameters',
-        sendKey: 'Send Public Key',
-        getKey: 'Receive Public Key',
-        openGuide: 'Open Documentation'
+        catClassical: 'Historical substitution and transposition systems',
+        catSymmetric: 'Shared key encryption for high efficiency',
+        catAsymmetric: 'Public key systems based on hard math problems',
+        catHashing: 'One-way transformations for data integrity',
+        catMac: 'Key-based authentication codes',
+        clearInput: 'Delete current data',
+        copyOutput: 'Copy output to clipboard',
+        transfer: 'Move data to receiving module',
+        randomize: 'Generate pseudo-random vector',
+        newParams: 'Recalculate group parameters',
+        sendKey: 'Transmit public component',
+        getKey: 'Inquire remote public component',
+        openGuide: 'View academic documentation'
     },
     categories: {
-      CLASSICAL: 'Classical',
-      SYMMETRIC: 'Symmetric',
-      ASYMMETRIC: 'Asymmetric',
+      CLASSICAL: 'Classical Cryptography',
+      SYMMETRIC: 'Symmetric Ciphers',
+      ASYMMETRIC: 'Asymmetric Systems',
       HASHING: 'Hash Functions',
-      MAC: 'MAC (Auth)',
-      GENERAL: 'General Cryptography'
+      MAC: 'Message Auth Codes (MAC)',
+      GENERAL: 'Crypto Science'
     },
     categoryDetails: {
-      GENERAL: "**Cryptography** is the mathematical science of securing information... [Academic details omitted for brevity]",
-      CLASSICAL: "Historical ciphers represent the pre-computational era...",
-      SYMMETRIC: "Symmetric-key algorithms use the same key for encryption and decryption...",
-      ASYMMETRIC: "Public-key cryptography uses a pair of mathematically related keys...",
-      HASHING: "Cryptographic hash functions map arbitrary data to a fixed-size digest...",
-      MAC: "Message Authentication Codes provide integrity and authenticity..."
+      GENERAL: "Modern Cryptography is the mathematical science... [Detailed English content placeholder]",
+      CLASSICAL: "Classical ciphers form the historical legacy... [Detailed English content placeholder]",
+      SYMMETRIC: "Symmetric-key algorithms are the backbone... [Detailed English content placeholder]",
+      ASYMMETRIC: "Asymmetric (Public-key) cryptography solved... [Detailed English content placeholder]",
+      HASHING: "Cryptographic Hash Functions are one-way algorithms... [Detailed English content placeholder]",
+      MAC: "Message Authentication Codes (MACs) are security... [Detailed English content placeholder]"
     },
     algorithms: {
         CAESAR: 'Caesar Cipher',
         VIGENERE: 'Vigenère Cipher',
         PLAYFAIR: 'Playfair Cipher',
         MONOALPHABETIC: 'Mono-Substitution',
-        AES: 'AES (Modern)',
-        DES: 'DES (Legacy Sim)',
-        TRIPLE_DES: '3DES (Legacy Sim)',
-        RC4: 'RC4 (Stream)',
+        AES: 'AES (Advanced Encryption Standard)',
+        DES: 'DES (Data Encryption Standard)',
+        TRIPLE_DES: '3DES (Triple DES)',
+        RC4: 'RC4 (Rivest Cipher 4)',
         CHACHA20: 'ChaCha20-Poly1305',
-        RSA: 'RSA (Public Key)',
-        DIFFIE_HELLMAN: 'Diffie-Hellman',
-        ECC: 'Elliptic Curve (ECC)',
-        MD5: 'MD5',
-        SHA1: 'SHA-1',
-        SHA256: 'SHA-256',
-        SHA512: 'SHA-512',
+        RSA: 'RSA (Rivest-Shamir-Adleman)',
+        DIFFIE_HELLMAN: 'Diffie-Hellman Key Exchange',
+        ECC: 'Elliptic Curve Cryptography',
+        MD5: 'Message Digest 5',
+        SHA1: 'Secure Hash Algorithm 1',
+        SHA256: 'SHA-256 (SHA-2 Family)',
+        SHA512: 'SHA-512 (SHA-2 Family)',
         SHA3: 'SHA-3 (Keccak)',
         BLAKE2: 'BLAKE2b',
-        BLAKE3: 'BLAKE3',
-        HMAC: 'HMAC (Hash MAC)',
-        CMAC: 'CMAC (Cipher MAC)',
+        BLAKE3: 'BLAKE3 (Parallel Hash)',
+        HMAC: 'HMAC (Hash-based MAC)',
+        CMAC: 'CMAC (Cipher-based MAC)',
     },
     modes: {
         vigenere: { [VigenereMode.REPEATING]: 'Repeating', [VigenereMode.AUTOKEY]: 'Autokey' },
