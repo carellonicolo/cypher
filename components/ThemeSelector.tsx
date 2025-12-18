@@ -1,7 +1,5 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Palette, Check } from 'lucide-react';
+import { Palette, Check, Sparkles, Terminal, Heart, Leaf, Waves, Sunrise } from 'lucide-react';
 import { ThemeProfile } from '../types';
 import { getThemeName } from '../utils/themeEngine';
 
@@ -14,7 +12,6 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentProfile, setProfil
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -26,28 +23,33 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentProfile, setProfil
   }, []);
 
   const themes = [
-    { id: ThemeProfile.DEFAULT, color: 'bg-indigo-500' },
-    { id: ThemeProfile.NERD, color: 'bg-lime-500' },
-    { id: ThemeProfile.YOUTH, color: 'bg-violet-500' },
-    { id: ThemeProfile.NATURE, color: 'bg-emerald-500' },
-    { id: ThemeProfile.OCEAN, color: 'bg-cyan-500' },
-    { id: ThemeProfile.SUNSET, color: 'bg-orange-500' },
+    { id: ThemeProfile.DEFAULT, color: 'bg-indigo-500', icon: <Sparkles size={14} /> },
+    { id: ThemeProfile.NERD, color: 'bg-lime-500', icon: <Terminal size={14} /> },
+    { id: ThemeProfile.YOUTH, color: 'bg-violet-500', icon: <Heart size={14} /> },
+    { id: ThemeProfile.NATURE, color: 'bg-emerald-500', icon: <Leaf size={14} /> },
+    { id: ThemeProfile.OCEAN, color: 'bg-cyan-500', icon: <Waves size={14} /> },
+    { id: ThemeProfile.SUNSET, color: 'bg-orange-500', icon: <Sunrise size={14} /> },
   ];
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 rounded-xl hover:bg-white/50 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-all flex items-center gap-2 group active:scale-95 ${isOpen ? 'bg-white/50 dark:bg-white/10' : ''}`}
-        title="Change Theme"
+        className={`p-3 rounded-2xl transition-all flex items-center gap-2 group active:scale-90 hover:shadow-lg ${
+          isOpen 
+          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
+          : 'hover:bg-white dark:hover:bg-white/10 text-slate-500'
+        }`}
+        title="Change Visual Style"
       >
-        <Palette size={16} strokeWidth={2} />
+        <Palette size={20} strokeWidth={isOpen ? 2.5 : 2} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] p-1.5 animate-in fade-in zoom-in-95 duration-200 z-[60] border border-slate-200 dark:border-slate-700">
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider">Select Style</span>
+        <div className="absolute top-full right-0 mt-4 w-56 glass-panel rounded-[1.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] p-2 animate-in fade-in zoom-in-95 duration-300 z-[100] border border-white/40 dark:border-white/10">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 px-3 py-2 uppercase tracking-[0.2em]">Appearance</span>
+            
             {themes.map((theme) => (
               <button
                 key={theme.id}
@@ -55,18 +57,23 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentProfile, setProfil
                   setProfile(theme.id);
                   setIsOpen(false);
                 }}
-                className={`flex items-center justify-between w-full px-2 py-2 rounded-lg text-sm transition-colors ${
+                className={`flex items-center justify-between w-full px-3 py-3 rounded-[1rem] text-sm transition-all duration-200 group/item ${
                   currentProfile === theme.id
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/20 font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-white/10'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  {/* Color Dot */}
-                  <div className={`w-3 h-3 rounded-full ${theme.color} ring-1 ring-inset ring-black/5`}></div>
-                  <span>{getThemeName(theme.id)}</span>
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover/item:scale-110 ${
+                    currentProfile === theme.id 
+                    ? 'bg-white/20 text-white' 
+                    : `${theme.color} text-white`
+                  }`}>
+                    {theme.icon}
+                  </div>
+                  <span className="font-semibold tracking-tight">{getThemeName(theme.id)}</span>
                 </div>
-                {currentProfile === theme.id && <Check size={12} className="text-indigo-500" />}
+                {currentProfile === theme.id && <Check size={16} strokeWidth={3} className="mr-1" />}
               </button>
             ))}
           </div>

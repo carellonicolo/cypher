@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   RefreshCw, Copy, Trash2, 
-  Shield, Key, Play, HelpCircle, Send, Zap, ChevronRight
+  Shield, Key, Play, HelpCircle, Send, Zap, ChevronRight, ChevronDown
 } from 'lucide-react';
 
 import Header from './components/Header';
@@ -97,6 +97,15 @@ export default function App() {
   const [algorithm, setAlgorithm] = useState<AlgorithmType>(AlgorithmType.CAESAR);
   const [category, setCategory] = useState<AlgorithmCategory>(AlgorithmCategory.CLASSICAL);
 
+  // Accordion state for sidebar
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({
+    [AlgorithmCategory.CLASSICAL]: true,
+    [AlgorithmCategory.SYMMETRIC]: false,
+    [AlgorithmCategory.ASYMMETRIC]: false,
+    [AlgorithmCategory.HASHING]: false,
+    [AlgorithmCategory.MAC]: false,
+  });
+
   const [encState, setEncState] = useState<SectionState>({ ...INITIAL_SECTION_STATE });
   const [decState, setDecState] = useState<SectionState>({ ...INITIAL_SECTION_STATE });
 
@@ -118,10 +127,21 @@ export default function App() {
   }, [scale]);
 
   useEffect(() => {
-    setCategory(ALGO_CATEGORIES[algorithm]);
+    const currentCat = ALGO_CATEGORIES[algorithm];
+    setCategory(currentCat);
+    // Ensure the current algorithm's category is expanded when switching algorithm from other means
+    setExpandedCats(prev => ({ ...prev, [currentCat]: true }));
+    
     setEncState(prev => ({ ...INITIAL_SECTION_STATE, dhP: prev.dhP, dhG: prev.dhG }));
     setDecState(prev => ({ ...INITIAL_SECTION_STATE, dhP: prev.dhP, dhG: prev.dhG }));
   }, [algorithm]);
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCats(prev => ({
+      ...prev,
+      [cat]: !prev[cat]
+    }));
+  };
 
   const addLog = (message: string, type: 'info' | 'success' | 'error' | 'process') => {
     setLogs(prev => [...prev, { id: generateId(), timestamp: new Date(), type, message }]);
@@ -482,39 +502,58 @@ export default function App() {
        />
        
        <div className="relative z-10 pt-28 px-8 pb-12 max-w-[1600px] mx-auto grid grid-cols-12 gap-10 h-[calc(100vh-20px)]">
-          <aside className="col-span-3 lg:col-span-2 glass-panel rounded-apple overflow-y-auto custom-scrollbar p-4 flex flex-col gap-8 shadow-2xl">
-             {CATEGORY_ORDER.map(cat => (
-                <div key={cat} className="animate-in fade-in slide-in-from-left-4 duration-500">
-                  <div className="flex items-center justify-between px-3 py-2.5 sticky top-0 bg-white/60 dark:bg-[#1c1c1e]/60 backdrop-blur-3xl z-10 rounded-2xl mb-3 border border-black/5 dark:border-white/5">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                      {LABELS[lang].categories[cat]}
-                    </span>
+          <aside className="col-span-3 lg:col-span-2 glass-panel rounded-apple overflow-y-auto custom-scrollbar p-3 flex flex-col gap-3 shadow-2xl">
+             {CATEGORY_ORDER.map(cat => {
+                const algorithmsInCat = Object.values(AlgorithmType).filter(algo => ALGO_CATEGORIES[algo] === cat);
+                const isExpanded = expandedCats[cat];
+
+                return (
+                  <div key={cat} className="flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
+                    {/* Collapsible Header */}
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setModalTarget({ cat }); setIsModalOpen(true); }}
-                      className="text-slate-300 hover:text-blue-500 transition-colors"
+                      onClick={() => toggleCategory(cat)}
+                      className={`flex items-center justify-between px-3 py-3 rounded-2xl mb-1 transition-all duration-300 border border-black/5 dark:border-white/5 group ${isExpanded ? 'bg-white/40 dark:bg-white/5' : 'hover:bg-slate-200/50 dark:hover:bg-white/5'}`}
                     >
-                      <HelpCircle size={14} />
+                      <div className="flex items-center gap-2">
+                         <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}>
+                            <ChevronRight size={14} className="text-slate-400 group-hover:text-blue-500" />
+                         </div>
+                         <span className={`text-[10px] font-black uppercase tracking-[0.15em] transition-colors ${isExpanded ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                           {LABELS[lang].categories[cat]}
+                         </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 opacity-60">
+                           {algorithmsInCat.length}
+                        </span>
+                        <div 
+                          onClick={(e) => { e.stopPropagation(); setModalTarget({ cat }); setIsModalOpen(true); }}
+                          className="p-1 hover:bg-blue-500/10 rounded-full transition-colors text-slate-300 hover:text-blue-500"
+                        >
+                          <HelpCircle size={12} />
+                        </div>
+                      </div>
                     </button>
-                  </div>
-                  <div className="flex flex-col gap-2 px-1">
-                    {Object.values(AlgorithmType)
-                      .filter(algo => ALGO_CATEGORIES[algo] === cat)
-                      .map(algo => (
+
+                    {/* Collapsible Content */}
+                    <div className={`flex flex-col gap-1 overflow-hidden transition-all duration-500 px-1 ${isExpanded ? 'max-h-[500px] opacity-100 py-1' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+                      {algorithmsInCat.map(algo => (
                         <button
                           key={algo}
                           onClick={() => setAlgorithm(algo)}
-                          className={`text-left px-5 py-3 rounded-2xl text-[11px] font-bold tracking-tight transition-all duration-300 ${
+                          className={`text-left px-5 py-2.5 rounded-xl text-[11px] font-bold tracking-tight transition-all duration-300 ${
                             algorithm === algo 
-                            ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40 scale-[1.03]' 
+                            ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/40 translate-x-1' 
                             : 'hover:bg-slate-200/50 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400'
                           }`}
                         >
                           {LABELS[lang].algorithms[algo]}
                         </button>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-             ))}
+                );
+             })}
           </aside>
 
           <main className="col-span-9 lg:col-span-10 flex flex-col gap-10 overflow-y-auto custom-scrollbar pr-4">
@@ -577,7 +616,7 @@ export default function App() {
                         </div>
                     </div>
                     
-                    <div className={`rounded-apple-lg p-7 min-h-[140px] flex items-center justify-center border border-slate-200/30 dark:border-white/5 shadow-inner leading-relaxed transition-all ${category === AlgorithmCategory.HASHING ? 'hash-output-box ring-1 ring-blue-500/10' : 'bg-slate-50/50 dark:bg-black/40 font-mono text-sm'}`}>
+                    <div className={`rounded-apple-lg p-7 min-h-[140px] flex items-center justify-center border border-slate-200/30 dark:border-white/5 shadow-inner leading-relaxed transition-all ${ALGO_CATEGORIES[algorithm] === AlgorithmCategory.HASHING ? 'hash-output-box ring-1 ring-blue-500/10' : 'bg-slate-50/50 dark:bg-black/40 font-mono text-sm'}`}>
                        {encState.output ? (
                          <div className="w-full text-left break-all">
                             {encState.output}
