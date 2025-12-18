@@ -147,6 +147,10 @@ export default function App() {
     setLogs(prev => [...prev, { id: generateId(), timestamp: new Date(), type, message }]);
   };
 
+  const clearLogs = () => {
+    setLogs([]);
+  };
+
   const copyToClipboard = (text: string) => {
     if(!text) return;
     navigator.clipboard.writeText(text);
@@ -703,7 +707,7 @@ export default function App() {
           </main>
        </div>
 
-       <Console logs={logs} lang={lang} />
+       <Console logs={logs} lang={lang} onClear={clearLogs} />
        <InfoModal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
