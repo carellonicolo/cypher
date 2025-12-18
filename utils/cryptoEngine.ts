@@ -1,10 +1,11 @@
 // Utility to handle pure logic
-import { AesMode, AlgorithmType, VigenereMode, Sha3Length, LegacyKeyMode, DhGroup, DhBitLength } from '../types';
+import { AesMode, AlgorithmType, VigenereMode, Sha3Length, LegacyKeyMode, DhGroup, DhBitLength, EccCurve, AesKeyLength } from '../types';
 
 // Access global libraries loaded via <script> tags in index.html
-// This avoids ESM import crashes for legacy libraries
 const getGlobalMD5 = () => (window as any).md5;
 const getGlobalSHA3 = () => (window as any).sha3_512 ? (window as any) : null;
+const getGlobalBLAKE2 = () => (window as any).blakejs;
+const getGlobalBLAKE3 = () => (window as any).hashwasm?.blake3;
 
 /* ================= CLASSICAL ALGORITHMS ================= */
 
@@ -70,11 +71,12 @@ export const vigenereCipher = (text: string, key: string, decrypt: boolean = fal
 };
 
 // --- Playfair ---
-export const playfairCipher = (text: string, key: string, decrypt: boolean = false): string => {
+
+// Helper to get matrix for visualization
+export const getPlayfairMatrix = (key: string): string[] => {
   const alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ"; // No J
   const cleanKey = (key.toUpperCase().replace(/[^A-Z]/g, '') + alphabet).replace(/J/g, 'I');
   
-  // Create 5x5 Matrix
   const matrix: string[] = [];
   const seen = new Set();
   for (const char of cleanKey) {
@@ -83,6 +85,11 @@ export const playfairCipher = (text: string, key: string, decrypt: boolean = fal
       matrix.push(char);
     }
   }
+  return matrix;
+}
+
+export const playfairCipher = (text: string, key: string, decrypt: boolean = false): string => {
+  const matrix = getPlayfairMatrix(key);
 
   // Preprocess Text
   let input = text.toUpperCase().replace(/[^A-Z]/g, '').replace(/J/g, 'I');
@@ -125,99 +132,276 @@ export const playfairCipher = (text: string, key: string, decrypt: boolean = fal
 };
 
 // --- Monoalphabetic Substitution ---
+
+export const getSubstitutionAlphabet = (key: string): Record<string, string> => {
+    const alphabet = "abcdefghijklmnopqrstuvwxyz";
+    const cleanKey = Array.from(new Set((key.toLowerCase().replace(/[^a-z]/g, '') + alphabet).split(''))).join('');
+    const map: Record<string, string> = {};
+    for(let i=0; i<26; i++) {
+        map[alphabet[i]] = cleanKey[i];
+    }
+    return map;
+}
+
 export const substitutionCipher = (text: string, key: string, decrypt: boolean = false): string => {
-  const alphabet = "abcdefghijklmnopqrstuvwxyz";
-  // Generate distinct key map
-  const cleanKey = Array.from(new Set((key.toLowerCase().replace(/[^a-z]/g, '') + alphabet).split(''))).join('');
+  const map = getSubstitutionAlphabet(key);
   
-  const map: Record<string, string> = {};
-  for(let i=0; i<26; i++) {
-    if(decrypt) map[cleanKey[i]] = alphabet[i];
-    else map[alphabet[i]] = cleanKey[i];
+  // Invert map for decryption
+  const activeMap: Record<string, string> = {};
+  if (decrypt) {
+      Object.entries(map).forEach(([k, v]) => activeMap[v] = k);
+  } else {
+      Object.assign(activeMap, map);
   }
 
   return text.replace(/[a-zA-Z]/g, (char) => {
     const lower = char.toLowerCase();
-    const mapped = map[lower] || lower;
+    const mapped = activeMap[lower] || lower;
     return char === lower ? mapped : mapped.toUpperCase();
   });
 };
 
 
-/* ================= HASHING ================= */
+/* ================= HASHING & MAC ================= */
 
-export const computeHash = async (text: string, algo: AlgorithmType, sha3Len: Sha3Length = Sha3Length.L512): Promise<string> => {
-  if (!text) return "";
+export const computeHash = async (text: string, algo: AlgorithmType, variantParam: string = Sha3Length.L512, key?: string): Promise<string> => {
+  if (!text && algo !== AlgorithmType.HMAC && algo !== AlgorithmType.CMAC) return "";
   
   if (algo === AlgorithmType.MD5) {
       try {
         const md5Func = getGlobalMD5();
-        if (typeof md5Func === 'function') {
-           return md5Func(text);
-        }
+        if (typeof md5Func === 'function') return md5Func(text);
         return "Error: MD5 library failed to load";
-      } catch (e) {
-        return "Error computing MD5: " + String(e);
-      }
+      } catch (e) { return "Error computing MD5: " + String(e); }
   }
 
   if (algo === AlgorithmType.SHA3) {
     try {
       const sha3Lib = getGlobalSHA3();
-      if (!sha3Lib) return "Error: SHA3 library failed to load via Script Tag.";
-      
-      const funcName = `sha3_${sha3Len}`;
-      if (typeof sha3Lib[funcName] === 'function') {
-          return sha3Lib[funcName](text);
-      } else if (typeof sha3Lib === 'function' && sha3Len === Sha3Length.L512) {
-          // Sometimes library is just the function itself
-          return sha3Lib(text);
-      }
-
+      if (!sha3Lib) return "Error: SHA3 library failed to load.";
+      const funcName = `sha3_${variantParam}`;
+      if (typeof sha3Lib[funcName] === 'function') return sha3Lib[funcName](text);
+      else if (typeof sha3Lib === 'function' && variantParam === Sha3Length.L512) return sha3Lib(text);
       return "Error: SHA3 function not found.";
-    } catch (e) {
-      return "Error computing SHA3: " + String(e);
-    }
+    } catch (e) { return "Error computing SHA3: " + String(e); }
+  }
+
+  if (algo === AlgorithmType.BLAKE2) {
+    try {
+      const blake2 = getGlobalBLAKE2();
+      if (!blake2 || !blake2.blake2bHex) return "Error: BLAKE2 library failed to load.";
+      return blake2.blake2bHex(text);
+    } catch (e) { return "Error computing BLAKE2: " + String(e); }
+  }
+
+  if (algo === AlgorithmType.BLAKE3) {
+    try {
+        const blake3Func = getGlobalBLAKE3();
+        if (typeof blake3Func === 'function') {
+            return await blake3Func(text);
+        }
+        return "Error: BLAKE3 library failed to load";
+    } catch (e) { return "Error computing BLAKE3: " + String(e); }
   }
 
   const enc = new TextEncoder();
   const data = enc.encode(text);
+
+  // HMAC
+  if (algo === AlgorithmType.HMAC) {
+      if (!key) return "Error: Key required for HMAC";
+      try {
+          const cryptoKey = await window.crypto.subtle.importKey(
+              "raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+          );
+          const sig = await window.crypto.subtle.sign("HMAC", cryptoKey, data);
+          return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) { return "Error computing HMAC: " + String(e); }
+  }
+
+  // CMAC (Simulated via AES-CBC Last Block - Educational)
+  if (algo === AlgorithmType.CMAC) {
+      if (!key) return "Error: Key required for CMAC";
+      try {
+          // Determine Key Length (128 or 256 bits) based on variantParam
+          const targetKeyBits = parseInt(variantParam) === 128 ? 128 : 256;
+          
+          // Use SHA-256 to derive a consistent key from the user input
+          const hashBuffer = await window.crypto.subtle.digest("SHA-256", enc.encode(key));
+          const rawHash = new Uint8Array(hashBuffer);
+          
+          // If 128-bit requested, take first 16 bytes. If 256-bit, take full 32 bytes.
+          const keyBytes = targetKeyBits === 128 ? rawHash.slice(0, 16) : rawHash;
+
+          const cryptoKey = await window.crypto.subtle.importKey(
+            "raw", keyBytes, 
+            { name: "AES-CBC" }, false, ["encrypt"]
+          );
+          
+          const iv = new Uint8Array(16); // Zero IV for CMAC simulation
+          const encrypted = await window.crypto.subtle.encrypt({ name: "AES-CBC", iv }, cryptoKey, data);
+          const bytes = new Uint8Array(encrypted);
+          
+          // Take last 16 bytes (block) as the MAC
+          const lastBlock = bytes.slice(bytes.length - 16);
+          return Array.from(lastBlock).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) { return "Error computing CMAC: " + String(e); }
+  }
   
   let hashBuffer;
-  
   try {
     switch (algo) {
-      case AlgorithmType.SHA1:
-        hashBuffer = await window.crypto.subtle.digest('SHA-1', data);
-        break;
-      case AlgorithmType.SHA256:
-        hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-        break;
-      case AlgorithmType.SHA512:
-        hashBuffer = await window.crypto.subtle.digest('SHA-512', data);
-        break;
-      default:
-        return "Hash algorithm not supported natively";
+      case AlgorithmType.SHA1: hashBuffer = await window.crypto.subtle.digest('SHA-1', data); break;
+      case AlgorithmType.SHA256: hashBuffer = await window.crypto.subtle.digest('SHA-256', data); break;
+      case AlgorithmType.SHA512: hashBuffer = await window.crypto.subtle.digest('SHA-512', data); break;
+      default: return "Hash algorithm not supported natively";
     }
-  } catch (e) {
-    return "Error computing hash: " + String(e);
-  }
+  } catch (e) { return "Error computing hash: " + String(e); }
   
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-/* ================= SYMMETRIC (MODERN & LEGACY) ================= */
+/* ================= SYMMETRIC (MODERN & STREAM) ================= */
 
-export const aesEncrypt = async (text: string, password: string, mode: AesMode = AesMode.GCM): Promise<string> => {
+// RC4 Implementation (Manual)
+export const rc4Cipher = (text: string, key: string): string => {
+    if (!key) return "Error: Key required";
+    const s = new Uint8Array(256);
+    for(let i=0; i<256; i++) s[i] = i;
+    let j = 0;
+    const k = new TextEncoder().encode(key);
+    if(k.length === 0) return text;
+    
+    for(let i=0; i<256; i++) {
+        j = (j + s[i] + k[i % k.length]) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+    }
+
+    let i=0; j=0;
+    const input = new TextEncoder().encode(text);
+    const output = new Uint8Array(input.length);
+
+    for(let n=0; n<input.length; n++) {
+        i = (i + 1) % 256;
+        j = (j + s[i]) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+        const keystreamByte = s[(s[i] + s[j]) % 256];
+        output[n] = input[n] ^ keystreamByte;
+    }
+
+    // Convert to Hex for display to handle non-printable chars safely
+    return Array.from(output).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+// RC4 Decrypt (XOR is symmetric, so encryption logic is same, but input format differs if we output Hex)
+export const rc4Decrypt = (hex: string, key: string): string => {
+     // Hex to bytes
+     const cleanHex = hex.replace(/\s/g, '');
+     if (cleanHex.length % 2 !== 0) return "Error: Invalid Hex";
+     
+     // To decrypt RC4, we just re-run the stream gen. 
+     // We need to pass the raw bytes of ciphertext to the cipher function
+     // But my rc4Cipher above accepts string input. 
+     // Let's copy logic for byte-to-string decrypt.
+     
+     if (!key) return "Error: Key required";
+     const bytes = new Uint8Array(cleanHex.length / 2);
+     for(let i=0; i<cleanHex.length; i+=2) bytes[i/2] = parseInt(cleanHex.substr(i, 2), 16);
+
+     const s = new Uint8Array(256);
+     for(let i=0; i<256; i++) s[i] = i;
+     let j = 0;
+     const k = new TextEncoder().encode(key);
+     
+     for(let i=0; i<256; i++) {
+        j = (j + s[i] + k[i % k.length]) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+    }
+
+    let i=0; j=0;
+    const output = new Uint8Array(bytes.length);
+    for(let n=0; n<bytes.length; n++) {
+        i = (i + 1) % 256;
+        j = (j + s[i]) % 256;
+        [s[i], s[j]] = [s[j], s[i]];
+        const keystreamByte = s[(s[i] + s[j]) % 256];
+        output[n] = bytes[n] ^ keystreamByte;
+    }
+    
+    return new TextDecoder().decode(output);
+}
+
+export const chachaEncrypt = async (text: string, password: string): Promise<string> => {
+    try {
+        const enc = new TextEncoder();
+        // Key Derivation
+        const keyMaterial = await window.crypto.subtle.importKey(
+          "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+        );
+        const key = await window.crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: enc.encode("chacha_salt"), iterations: 1000, hash: "SHA-256" },
+          keyMaterial, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"] 
+        );
+        
+        const rawKey = await window.crypto.subtle.exportKey("raw", key);
+        const chachaKey = await window.crypto.subtle.importKey("raw", rawKey, "ChaCha20-Poly1305", false, ["encrypt", "decrypt"]);
+
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const encrypted = await window.crypto.subtle.encrypt({ name: "ChaCha20-Poly1305", iv: iv }, chachaKey, enc.encode(text));
+
+        const combined = new Uint8Array(iv.length + encrypted.byteLength);
+        combined.set(iv);
+        combined.set(new Uint8Array(encrypted), iv.length);
+
+        let binary = '';
+        for (let i = 0; i < combined.byteLength; i++) binary += String.fromCharCode(combined[i]);
+        return window.btoa(binary);
+    } catch(e) {
+        return "Error: Browser may not support ChaCha20-Poly1305 natively.";
+    }
+}
+
+export const chachaDecrypt = async (ciphertext: string, password: string): Promise<string> => {
+    try {
+        const enc = new TextEncoder();
+        const cleanCipher = ciphertext.trim().replace(/\s/g, '');
+        let binary = window.atob(cleanCipher);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+        const iv = bytes.slice(0, 12);
+        const data = bytes.slice(12);
+
+        const keyMaterial = await window.crypto.subtle.importKey(
+          "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+        );
+        const key = await window.crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: enc.encode("chacha_salt"), iterations: 1000, hash: "SHA-256" },
+          keyMaterial, { name: "AES-GCM", length: 256 }, true, ["encrypt"]
+        );
+        const rawKey = await window.crypto.subtle.exportKey("raw", key);
+        const chachaKey = await window.crypto.subtle.importKey("raw", rawKey, "ChaCha20-Poly1305", false, ["encrypt", "decrypt"]);
+
+        const decrypted = await window.crypto.subtle.decrypt({ name: "ChaCha20-Poly1305", iv: iv }, chachaKey, data);
+        return new TextDecoder().decode(decrypted);
+    } catch(e) {
+        return "Error: Decryption Failed";
+    }
+}
+
+// AES Functions
+export const aesEncrypt = async (text: string, password: string, mode: AesMode = AesMode.GCM, keyLength: AesKeyLength = AesKeyLength.L256): Promise<string> => {
   try {
     const enc = new TextEncoder();
+    const bits = parseInt(keyLength);
+
     const keyMaterial = await window.crypto.subtle.importKey(
       "raw", enc.encode(password.padEnd(16, '0')), { name: "PBKDF2" }, false, ["deriveKey"]
     );
     const key = await window.crypto.subtle.deriveKey(
       { name: "PBKDF2", salt: enc.encode("salty_salt"), iterations: 1000, hash: "SHA-256" },
-      keyMaterial, { name: `AES-${mode}`, length: 256 }, true, ["encrypt", "decrypt"]
+      keyMaterial, { name: `AES-${mode === AesMode.ECB ? 'CBC' : mode}`, length: bits }, true, ["encrypt", "decrypt"]
     );
 
     let iv: Uint8Array;
@@ -226,7 +410,7 @@ export const aesEncrypt = async (text: string, password: string, mode: AesMode =
     if (mode === AesMode.GCM) {
       iv = window.crypto.getRandomValues(new Uint8Array(12));
       algorithmParams = { name: "AES-GCM", iv: iv };
-    } else if (mode === AesMode.CBC) {
+    } else if (mode === AesMode.CBC || mode === AesMode.ECB) { 
       iv = window.crypto.getRandomValues(new Uint8Array(16));
       algorithmParams = { name: "AES-CBC", iv: iv };
     } else { 
@@ -247,7 +431,7 @@ export const aesEncrypt = async (text: string, password: string, mode: AesMode =
   }
 };
 
-export const aesDecrypt = async (ciphertext: string, password: string, mode: AesMode = AesMode.GCM): Promise<string> => {
+export const aesDecrypt = async (ciphertext: string, password: string, mode: AesMode = AesMode.GCM, keyLength: AesKeyLength = AesKeyLength.L256): Promise<string> => {
   try {
     const enc = new TextEncoder();
     const dec = new TextDecoder();
@@ -261,18 +445,19 @@ export const aesDecrypt = async (ciphertext: string, password: string, mode: Aes
 
     const iv = bytes.slice(0, ivLength);
     const data = bytes.slice(ivLength);
+    const bits = parseInt(keyLength);
 
     const keyMaterial = await window.crypto.subtle.importKey(
       "raw", enc.encode(password.padEnd(16, '0')), { name: "PBKDF2" }, false, ["deriveKey"]
     );
     const key = await window.crypto.subtle.deriveKey(
       { name: "PBKDF2", salt: enc.encode("salty_salt"), iterations: 1000, hash: "SHA-256" },
-      keyMaterial, { name: `AES-${mode}`, length: 256 }, true, ["encrypt", "decrypt"]
+      keyMaterial, { name: `AES-${mode === AesMode.ECB ? 'CBC' : mode}`, length: bits }, true, ["encrypt", "decrypt"]
     );
 
     let algorithmParams: any;
     if (mode === AesMode.GCM) algorithmParams = { name: "AES-GCM", iv: iv };
-    else if (mode === AesMode.CBC) algorithmParams = { name: "AES-CBC", iv: iv };
+    else if (mode === AesMode.CBC || mode === AesMode.ECB) algorithmParams = { name: "AES-CBC", iv: iv };
     else algorithmParams = { name: "AES-CTR", counter: iv, length: 64 };
 
     const decryptedContent = await window.crypto.subtle.decrypt(algorithmParams, key, data);
@@ -282,43 +467,34 @@ export const aesDecrypt = async (ciphertext: string, password: string, mode: Aes
   }
 };
 
-// --- Legacy Simulations (DES/3DES) ---
-// Since DES/3DES are removed from WebCrypto, we simulate them using AES with weakened parameters or visual shifts
-// to purely demonstrate the concept in an educational app without 500 lines of polyfill code.
-export const legacySimulationEncrypt = (text: string, type: 'DES' | '3DES', mode: LegacyKeyMode): string => {
-  // Enhanced Simulation: Varies transformation based on key length
+// ... (Rest of legacy and asymmetric functions remain unchanged) ...
+export const legacySimulationEncrypt = (text: string, type: 'DES' | '3DES', keyMode: LegacyKeyMode, blockMode: AesMode): string => {
   let processed = text;
-  
-  // Basic scrambling based on mode
-  if (mode === LegacyKeyMode.DES56) {
-      // Simple reverse
+  if (keyMode === LegacyKeyMode.DES56) {
       processed = text.split('').reverse().join('');
-  } else if (mode === LegacyKeyMode.TDES112) {
-      // Simulate double encryption strength by char shift + reverse
+  } else if (keyMode === LegacyKeyMode.TDES112) {
       processed = text.split('').map(c => String.fromCharCode(c.charCodeAt(0) + 1)).reverse().join('');
-  } else if (mode === LegacyKeyMode.TDES168) {
-       // Simulate triple encryption strength by stronger char shift + reverse
+  } else if (keyMode === LegacyKeyMode.TDES168) {
       processed = text.split('').map(c => String.fromCharCode(c.charCodeAt(0) + 2)).reverse().join('');
   } else {
       processed = text.split('').reverse().join('');
   }
-
-  return `[${type}-${mode}-SIMULATED]::` + window.btoa(processed); 
+  const modeStr = blockMode === AesMode.ECB ? 'ECB' : 'CBC';
+  return `[${type}-${keyMode}-${modeStr}-SIM]::` + window.btoa(processed); 
 };
 
-export const legacySimulationDecrypt = (text: string, type: 'DES' | '3DES', mode: LegacyKeyMode): string => {
-  const possiblePrefix = `[${type}-${mode}-SIMULATED]::`;
-  if (!text.startsWith(possiblePrefix)) return `Error: Invalid Format for ${mode}`;
-  
+export const legacySimulationDecrypt = (text: string, type: 'DES' | '3DES', keyMode: LegacyKeyMode, blockMode: AesMode): string => {
+  const modeStr = blockMode === AesMode.ECB ? 'ECB' : 'CBC';
+  const possiblePrefix = `[${type}-${keyMode}-${modeStr}-SIM]::`;
+  if (!text.startsWith(possiblePrefix)) return `Error: Invalid Format (Expected ${possiblePrefix})`;
   const payload = text.replace(possiblePrefix, '');
   try {
     const decoded = window.atob(payload);
-    
-    if (mode === LegacyKeyMode.DES56) {
+    if (keyMode === LegacyKeyMode.DES56) {
         return decoded.split('').reverse().join('');
-    } else if (mode === LegacyKeyMode.TDES112) {
+    } else if (keyMode === LegacyKeyMode.TDES112) {
         return decoded.split('').reverse().map(c => String.fromCharCode(c.charCodeAt(0) - 1)).join('');
-    } else if (mode === LegacyKeyMode.TDES168) {
+    } else if (keyMode === LegacyKeyMode.TDES168) {
         return decoded.split('').reverse().map(c => String.fromCharCode(c.charCodeAt(0) - 2)).join('');
     } else {
         return decoded.split('').reverse().join('');
@@ -326,13 +502,11 @@ export const legacySimulationDecrypt = (text: string, type: 'DES' | '3DES', mode
   } catch { return "Error"; }
 };
 
-/* ================= ASYMMETRIC (RSA) ================= */
-
-export const generateRSAKeys = async (): Promise<{ kp: CryptoKeyPair, pubPem: string, privPem: string }> => {
+export const generateRSAKeys = async (modulusLength: number = 2048): Promise<{ kp: CryptoKeyPair, pubPem: string, privPem: string }> => {
   const keyPair = await window.crypto.subtle.generateKey(
     {
       name: "RSA-OAEP",
-      modulusLength: 2048,
+      modulusLength: modulusLength,
       publicExponent: new Uint8Array([1, 0, 1]),
       hash: "SHA-256",
     },
@@ -349,8 +523,33 @@ export const generateRSAKeys = async (): Promise<{ kp: CryptoKeyPair, pubPem: st
   return { kp: keyPair, pubPem, privPem };
 };
 
-export const rsaEncrypt = async (text: string, publicKey: CryptoKey): Promise<string> => {
+const pemToArrayBuffer = (pem: string): ArrayBuffer => {
+  const b64 = pem.replace(/(-----(BEGIN|END) (PUBLIC|PRIVATE) KEY-----|\n|\s)/g, '');
+  const str = window.atob(b64);
+  const buf = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i);
+  return buf.buffer;
+};
+
+export const rsaEncrypt = async (text: string, key: CryptoKey | string): Promise<string> => {
   try {
+    let publicKey: CryptoKey;
+    if (typeof key === 'string') {
+        try {
+            publicKey = await window.crypto.subtle.importKey(
+                "spki",
+                pemToArrayBuffer(key),
+                { name: "RSA-OAEP", hash: "SHA-256" },
+                false,
+                ["encrypt"]
+            );
+        } catch (e) {
+            return "Error: Invalid RSA Public Key Format";
+        }
+    } else {
+        publicKey = key;
+    }
+
     const enc = new TextEncoder();
     const encrypted = await window.crypto.subtle.encrypt(
       { name: "RSA-OAEP" },
@@ -361,8 +560,25 @@ export const rsaEncrypt = async (text: string, publicKey: CryptoKey): Promise<st
   } catch(e) { return "RSA Encrypt Error"; }
 };
 
-export const rsaDecrypt = async (text: string, privateKey: CryptoKey): Promise<string> => {
+export const rsaDecrypt = async (text: string, key: CryptoKey | string): Promise<string> => {
   try {
+    let privateKey: CryptoKey;
+    if (typeof key === 'string') {
+        try {
+            privateKey = await window.crypto.subtle.importKey(
+                "pkcs8",
+                pemToArrayBuffer(key),
+                { name: "RSA-OAEP", hash: "SHA-256" },
+                false,
+                ["decrypt"]
+            );
+        } catch(e) {
+            return "Error: Invalid RSA Private Key Format";
+        }
+    } else {
+        privateKey = key;
+    }
+
     const dec = new TextDecoder();
     const binary = window.atob(text);
     const bytes = new Uint8Array(binary.length);
@@ -377,17 +593,48 @@ export const rsaDecrypt = async (text: string, privateKey: CryptoKey): Promise<s
   } catch(e) { return "RSA Decrypt Error (Key Mismatch?)"; }
 };
 
-/* ================= DIFFIE-HELLMAN ================= */
+export const generateECCKeys = async (curve: string): Promise<{ kp: CryptoKeyPair, pubHex: string, privHex: string }> => {
+    const keyPair = await window.crypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: curve },
+        true,
+        ["deriveKey", "deriveBits"]
+    );
+    const pubJwk = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+    const privJwk = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+    return { 
+        kp: keyPair, 
+        pubHex: JSON.stringify({ x: pubJwk.x, y: pubJwk.y }), 
+        privHex: JSON.stringify({ d: privJwk.d }) 
+    };
+};
 
-// RFC 3526 Groups (MODP)
-// Storing as BigInt compatible hex strings (0x...)
+export const eccCalculate = async (privKey: CryptoKey, otherPubJwkStr: string, curve: string): Promise<{ shared: string }> => {
+    try {
+        const otherJwk = JSON.parse(otherPubJwkStr);
+        const peerKey = await window.crypto.subtle.importKey(
+            "jwk", 
+            { kty: "EC", crv: curve, x: otherJwk.x, y: otherJwk.y, ext: true }, 
+            { name: "ECDH", namedCurve: curve }, 
+            false, 
+            []
+        );
+
+        const sharedBits = await window.crypto.subtle.deriveBits(
+            { name: "ECDH", public: peerKey },
+            privKey,
+            256
+        );
+        return { shared: Array.from(new Uint8Array(sharedBits)).map(b => b.toString(16).padStart(2, '0')).join('') };
+    } catch(e) {
+        return { shared: "Error: Invalid Peer Key" };
+    }
+};
+
 const DH_GROUPS = {
-  // Group 14 (2048-bit)
   [DhGroup.MODP_14]: {
     p: "0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF",
     g: "2"
   },
-  // Group 15 (3072-bit)
   [DhGroup.MODP_15]: {
     p: "0xFFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD961C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA18217C32905E462E36CE3BE39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9DE2BCBF6955817183995497CEA956AE515D2261898FA051015728E5A8AACAA68FFFFFFFFFFFFFFFF",
     g: "2"
@@ -396,7 +643,6 @@ const DH_GROUPS = {
 
 const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// Checks if n is prime (simple check for educational primes < 10000)
 const isPrime = (n: number) => {
   if (n <= 1) return false;
   if (n <= 3) return true;
@@ -416,8 +662,6 @@ export const dhGenerateParams = (group: DhGroup = DhGroup.TOY): { p: string, g: 
     const g = getRandomInt(2, 50); 
     return { p: p.toString(), g: g.toString() };
   } else {
-    // For RFC groups, return the BigInt string representation (decimal)
-    // The constants are hex, BigInt(hex) works.
     const params = DH_GROUPS[group];
     return { 
         p: BigInt(params.p).toString(), 
@@ -427,7 +671,6 @@ export const dhGenerateParams = (group: DhGroup = DhGroup.TOY): { p: string, g: 
 };
 
 export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY, bitLength: DhBitLength = DhBitLength.NATIVE): string => {
-    // 1. If a specific larger bit length is requested (educational override)
     if (bitLength !== DhBitLength.NATIVE) {
         const bits = parseInt(bitLength);
         const bytes = Math.ceil(bits / 8);
@@ -440,23 +683,16 @@ export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY,
         return BigInt(hex).toString();
     }
 
-    // 2. Default/Native logic based on group size
     if (group === DhGroup.TOY) {
         try {
             const prime = BigInt(pStr);
             if (prime <= 2n) return "2";
-
-            // If prime is small enough for standard Math.random logic (safe integer limit 2^53 - 1)
-            // Note: BigInt comparison with BigInt
             if (prime < 9007199254740991n) {
                 const pNum = Number(prime);
                 return getRandomInt(2, Math.max(2, pNum - 2)).toString();
             } else {
-                 // For manually entered large primes in TOY mode, return a safe random smallish BigInt or based on bit length
-                 // Just generate a random 32-bit integer for simplicity and safety
                  const array = new Uint8Array(4); 
                  window.crypto.getRandomValues(array);
-                 // Ensure it's modulo prime-2 logic roughly, or just random
                  const r = BigInt("0x" + Array.from(array).map(b => b.toString(16).padStart(2,'0')).join(''));
                  return (r % (prime - 2n) + 2n).toString();
             }
@@ -464,7 +700,6 @@ export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY,
             return "6";
         }
     } else {
-        // Standard secure random for real groups (approx 256 bits is standard for key exchange exponents)
         const array = new Uint8Array(32); 
         window.crypto.getRandomValues(array);
         let hex = "0x";
@@ -475,7 +710,6 @@ export const dhGeneratePrivateKey = (pStr: string, group: DhGroup = DhGroup.TOY,
     }
 };
 
-// Modular Exponentiation: (base^exp) % mod
 const modPow = (base: bigint, exp: bigint, mod: bigint): bigint => {
   let res = 1n;
   base = base % mod;
@@ -488,7 +722,6 @@ const modPow = (base: bigint, exp: bigint, mod: bigint): bigint => {
 };
 
 export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPubStr?: string): { pub: string, shared?: string } => {
-  // --- Validation ---
   const isValidBigInt = (s: string) => {
     try {
       BigInt(s);
@@ -498,10 +731,8 @@ export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPu
 
   if (!pStr || !pStr.trim()) return { pub: "Error: Prime (p) is missing" };
   if (!isValidBigInt(pStr)) return { pub: "Error: Prime (p) must be a valid number" };
-
   if (!gStr || !gStr.trim()) return { pub: "Error: Generator (g) is missing" };
   if (!isValidBigInt(gStr)) return { pub: "Error: Generator (g) must be a valid number" };
-
   if (!privStr || !privStr.trim()) return { pub: "Error: Private Key is missing" };
   if (!isValidBigInt(privStr)) return { pub: "Error: Private Key must be a valid number" };
 
@@ -513,7 +744,6 @@ export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPu
     if (p <= 1n) return { pub: "Error: Prime (p) must be > 1" };
     if (g <= 0n) return { pub: "Error: Generator (g) must be positive" };
 
-    // Calculate Public Key: A = g^a mod p
     const pub = modPow(g, priv, p);
     
     let shared;
@@ -523,7 +753,6 @@ export const dhCalculate = (pStr: string, gStr: string, privStr: string, otherPu
       }
       try {
         const otherPub = BigInt(otherPubStr);
-        // Calculate Shared Secret: S = B^a mod p
         shared = modPow(otherPub, priv, p).toString();
       } catch (e) {
         shared = "Error: Invalid Peer Public Key";
